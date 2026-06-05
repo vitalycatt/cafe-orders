@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install server dependencies
 COPY package.json package-lock.json* ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --ignore-scripts
 
 # Install and build client
 COPY client/package.json client/package-lock.json* ./client/
