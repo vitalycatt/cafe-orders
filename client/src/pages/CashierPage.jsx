@@ -23,6 +23,7 @@ export default function CashierPage() {
 
     loadData();
 
+    socket.on('connect', loadData);
     socket.on('orders:list', setOrders);
     socket.on('order:new', (order) => setOrders((prev) => [...prev, order]));
     socket.on('order:updated', (order) =>
@@ -32,6 +33,7 @@ export default function CashierPage() {
     socket.on('menu:changed', setMenuItems);
 
     return () => {
+      socket.off('connect', loadData);
       socket.off('orders:list', setOrders);
       socket.off('order:new');
       socket.off('order:updated');

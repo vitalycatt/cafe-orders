@@ -18,6 +18,7 @@ export default function BaristaPage() {
 
     loadOrders();
 
+    socket.on('connect', loadOrders);
     socket.on('orders:list', setOrders);
     socket.on('order:new', (order) => setOrders((prev) => [...prev, order]));
     socket.on('order:updated', (order) =>
@@ -25,6 +26,7 @@ export default function BaristaPage() {
     );
 
     return () => {
+      socket.off('connect', loadOrders);
       socket.off('orders:list', setOrders);
       socket.off('order:new');
       socket.off('order:updated');

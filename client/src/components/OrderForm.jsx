@@ -4,20 +4,29 @@ export default function OrderForm({ socket, menuItems }) {
   const [customerName, setCustomerName] = useState('');
   const [menuItemId, setMenuItemId] = useState('');
   const [notes, setNotes] = useState('');
+  const [sending, setSending] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!customerName.trim() || !menuItemId) return;
+    if (!customerName.trim() || !menuItemId || sending) return;
 
-    socket.emit('order:create', {
-      customer_name: customerName.trim(),
-      menu_item_id: Number(menuItemId),
-      notes: notes.trim(),
-    });
-
-    setCustomerName('');
-    setMenuItemId('');
-    setNotes('');
+    setSending(true);
+    socket.emit(
+      'order:create',
+      {
+        customer_name: customerName.trim(),
+        menu_item_id: Number(menuItemId),
+        notes: notes.trim(),
+      },
+      (response) => {
+        setSending(false);
+        if (response?.ok) {
+          setCustomerName('');
+          setMenuItemId('');
+          setNotes('');
+        }
+      }
+    );
   };
 
   return (
@@ -44,7 +53,9 @@ export default function OrderForm({ socket, menuItems }) {
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
       />
-      <button type="submit" className="btn btn-primary">Добавить заказ</button>
+      <button type="submit" className="btn btn-primary" disabled={sending}>
+        {sending ? 'Отправка...' : 'Добавить заказ'}
+      </button>
     </form>
   );
 }

@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "start": "node server/index.js",
     "server": "node server/index.js",
     "client": "cd client && npm run dev",
     "install:all": "npm install && cd client && npm install",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "postinstall": "cd client && npm install && npm run build"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",

@@ -33,12 +33,14 @@ io.on('connection', (socket) => {
     socket.emit('orders:list', orders);
   });
 
-  socket.on('order:create', (data) => {
+  socket.on('order:create', (data, callback) => {
     try {
       const order = db.createOrder(data.customer_name, data.menu_item_id, data.notes);
       io.emit('order:new', order);
+      if (typeof callback === 'function') callback({ ok: true });
     } catch (err) {
       socket.emit('error', { message: err.message });
+      if (typeof callback === 'function') callback({ ok: false, error: err.message });
     }
   });
 
