@@ -19,23 +19,21 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Serve static files in production
 const clientDist = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientDist));
 
-// Socket.io events
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
   // --- Orders ---
-  socket.on('orders:load', () => {
-    const orders = db.getOrdersByShift();
+  socket.on('orders:load', async () => {
+    const orders = await db.getOrdersByShift();
     socket.emit('orders:list', orders);
   });
 
-  socket.on('order:create', (data, callback) => {
+  socket.on('order:create', async (data, callback) => {
     try {
-      const order = db.createOrder(data.customer_name, data.menu_item_id, data.notes);
+      const order = await db.createOrder(data.customer_name, data.menu_item_id, data.notes);
       io.emit('order:new', order);
       if (typeof callback === 'function') callback({ ok: true });
     } catch (err) {
@@ -44,9 +42,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('order:update', (data) => {
+  socket.on('order:update', async (data) => {
     try {
-      const order = db.updateOrderStatus(data.id, data.status);
+      const order = await db.updateOrderStatus(data.id, data.status);
       io.emit('order:updated', order);
     } catch (err) {
       socket.emit('error', { message: err.message });
@@ -54,35 +52,35 @@ io.on('connection', (socket) => {
   });
 
   // --- Menu ---
-  socket.on('menu:load', () => {
-    const items = db.getMenuItems();
+  socket.on('menu:load', async () => {
+    const items = await db.getMenuItems();
     socket.emit('menu:list', items);
   });
 
-  socket.on('menu:add', (data) => {
+  socket.on('menu:add', async (data) => {
     try {
-      db.addMenuItem(data.name, data.price);
-      const items = db.getMenuItems();
+      await db.addMenuItem(data.name, data.price);
+      const items = await db.getMenuItems();
       io.emit('menu:changed', items);
     } catch (err) {
       socket.emit('error', { message: err.message });
     }
   });
 
-  socket.on('menu:update', (data) => {
+  socket.on('menu:update', async (data) => {
     try {
-      db.updateMenuItem(data.id, data.name, data.price);
-      const items = db.getMenuItems();
+      await db.updateMenuItem(data.id, data.name, data.price);
+      const items = await db.getMenuItems();
       io.emit('menu:changed', items);
     } catch (err) {
       socket.emit('error', { message: err.message });
     }
   });
 
-  socket.on('menu:delete', (data) => {
+  socket.on('menu:delete', async (data) => {
     try {
-      db.deleteMenuItem(data.id);
-      const items = db.getMenuItems();
+      await db.deleteMenuItem(data.id);
+      const items = await db.getMenuItems();
       io.emit('menu:changed', items);
     } catch (err) {
       socket.emit('error', { message: err.message });
@@ -90,8 +88,8 @@ io.on('connection', (socket) => {
   });
 
   // --- Shift Report ---
-  socket.on('shift:report', (data) => {
-    const report = db.getShiftReport(data?.date);
+  socket.on('shift:report', async (data) => {
+    const report = await db.getShiftReport(data?.date);
     socket.emit('shift:report_data', report);
   });
 
@@ -100,15 +98,20 @@ io.on('connection', (socket) => {
   });
 });
 
-// SPA fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientDist, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
 
-// Start bot
-require('./bot');
+db.initDb()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+    require('./bot');
+  })
+  .catch((err) => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  });

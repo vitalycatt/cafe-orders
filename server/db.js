@@ -1,89 +1,116 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+const { createClient } = require('@libsql/client');
 
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', 'cafe.db');
-const db = new Database(dbPath);
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || 'file:cafe.db',
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS menu_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    price REAL NOT NULL,
-    available INTEGER DEFAULT 1
-  );
-
-  CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_name TEXT NOT NULL,
-    menu_item_id INTEGER NOT NULL,
-    notes TEXT,
-    status TEXT DEFAULT 'pending',
-    created_at TEXT DEFAULT (datetime('now')),
-    shift_date TEXT DEFAULT (date('now')),
-    FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
-  );
-`);
+async function initDb() {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS menu_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      price REAL NOT NULL,
+      available INTEGER DEFAULT 1
+    )
+  `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_name TEXT NOT NULL,
+      menu_item_id INTEGER NOT NULL,
+      notes TEXT,
+      status TEXT DEFAULT 'pending',
+      created_at TEXT DEFAULT (datetime('now')),
+      shift_date TEXT DEFAULT (date('now')),
+      FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
+    )
+  `);
+}
 
 // --- Menu ---
 
-function getMenuItems() {
-  return db.prepare('SELECT * FROM menu_items WHERE available = 1 ORDER BY name').all();
+async function getMenuItems() {
+  const result = await db.execute('SELECT * FROM menu_items WHERE available = 1 ORDER BY name');
+  return result.rows;
 }
 
-function addMenuItem(name, price) {
-  const info = db.prepare('INSERT INTO menu_items (name, price) VALUES (?, ?)').run(name, price);
-  return db.prepare('SELECT * FROM menu_items WHERE id = ?').get(info.lastInsertRowid);
+async function addMenuItem(name, price) {
+  const result = await db.execute({
+    sql: 'INSERT INTO menu_items (name, price) VALUES (?, ?)',
+    args: [name, price],
+  });
+  const item = await db.execute({
+    sql: 'SELECT * FROM menu_items WHERE id = ?',
+    args: [result.lastInsertRowid],
+  });
+  return item.rows[0];
 }
 
-function updateMenuItem(id, name, price) {
-  db.prepare('UPDATE menu_items SET name = ?, price = ? WHERE id = ?').run(name, price, id);
-  return db.prepare('SELECT * FROM menu_items WHERE id = ?').get(id);
+async function updateMenuItem(id, name, price) {
+  await db.execute({
+    sql: 'UPDATE menu_items SET name = ?, price = ? WHERE id = ?',
+    args: [name, price, id],
+  });
+  const result = await db.execute({
+    sql: 'SELECT * FROM menu_items WHERE id = ?',
+    args: [id],
+  });
+  return result.rows[0];
 }
 
-function deleteMenuItem(id) {
-  db.prepare('UPDATE menu_items SET available = 0 WHERE id = ?').run(id);
+async function deleteMenuItem(id) {
+  await db.execute({
+    sql: 'UPDATE menu_items SET available = 0 WHERE id = ?',
+    args: [id],
+  });
 }
 
 // --- Orders ---
 
-function createOrder(customerName, menuItemId, notes) {
-  const info = db.prepare(
-    'INSERT INTO orders (customer_name, menu_item_id, notes) VALUES (?, ?, ?)'
-  ).run(customerName, menuItemId, notes || null);
-  return getOrderById(info.lastInsertRowid);
+async function createOrder(customerName, menuItemId, notes) {
+  const result = await db.execute({
+    sql: 'INSERT INTO orders (customer_name, menu_item_id, notes) VALUES (?, ?, ?)',
+    args: [customerName, menuItemId, notes || null],
+  });
+  return getOrderById(result.lastInsertRowid);
 }
 
-function getOrderById(id) {
-  return db.prepare(`
-    SELECT o.*, m.name AS drink_name, m.price
-    FROM orders o
-    JOIN menu_items m ON o.menu_item_id = m.id
-    WHERE o.id = ?
-  `).get(id);
+async function getOrderById(id) {
+  const result = await db.execute({
+    sql: `SELECT o.*, m.name AS drink_name, m.price
+          FROM orders o
+          JOIN menu_items m ON o.menu_item_id = m.id
+          WHERE o.id = ?`,
+    args: [id],
+  });
+  return result.rows[0];
 }
 
-function getOrdersByShift(shiftDate) {
+async function getOrdersByShift(shiftDate) {
   const date = shiftDate || new Date().toISOString().slice(0, 10);
-  return db.prepare(`
-    SELECT o.*, m.name AS drink_name, m.price
-    FROM orders o
-    JOIN menu_items m ON o.menu_item_id = m.id
-    WHERE o.shift_date = ?
-    ORDER BY o.created_at ASC
-  `).all(date);
+  const result = await db.execute({
+    sql: `SELECT o.*, m.name AS drink_name, m.price
+          FROM orders o
+          JOIN menu_items m ON o.menu_item_id = m.id
+          WHERE o.shift_date = ?
+          ORDER BY o.created_at ASC`,
+    args: [date],
+  });
+  return result.rows;
 }
 
-function updateOrderStatus(id, status) {
-  db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id);
+async function updateOrderStatus(id, status) {
+  await db.execute({
+    sql: 'UPDATE orders SET status = ? WHERE id = ?',
+    args: [status, id],
+  });
   return getOrderById(id);
 }
 
-function getShiftReport(shiftDate) {
+async function getShiftReport(shiftDate) {
   const date = shiftDate || new Date().toISOString().slice(0, 10);
-  const orders = getOrdersByShift(date);
+  const orders = await getOrdersByShift(date);
 
   const summary = {};
   let totalRevenue = 0;
@@ -115,6 +142,7 @@ function getShiftReport(shiftDate) {
 }
 
 module.exports = {
+  initDb,
   getMenuItems,
   addMenuItem,
   updateMenuItem,
