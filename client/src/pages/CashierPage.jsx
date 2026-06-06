@@ -4,6 +4,7 @@ import useSocket from '../hooks/useSocket';
 import OrderForm from '../components/OrderForm';
 import OrderList from '../components/OrderList';
 import MenuManager from '../components/MenuManager';
+import Modal from '../components/Modal';
 
 export default function CashierPage() {
   const { socket, connected } = useSocket();
@@ -50,7 +51,7 @@ export default function CashierPage() {
   return (
     <div className="page cashier-page">
       <header className="page-header">
-        <h1>Кассир</h1>
+        <h1>☕ Кассир</h1>
         <div className="header-actions">
           <span className={`status-dot ${connected ? 'online' : 'offline'}`} />
           <button className="btn-sm" onClick={changeRole}>Сменить роль</button>
@@ -60,18 +61,22 @@ export default function CashierPage() {
       <OrderForm socket={socket} menuItems={menuItems} />
 
       <div className="section-actions">
-        <button className="btn" onClick={() => setShowMenu(!showMenu)}>
-          {showMenu ? 'Скрыть меню' : 'Управление меню'}
+        <button className="btn btn-secondary" onClick={() => setShowMenu(true)}>
+          🍽 Меню
         </button>
         <button className="btn btn-secondary" onClick={() => navigate('/report')}>
-          Отчёт за смену
+          📊 Отчёт
         </button>
       </div>
 
-      {showMenu && <MenuManager socket={socket} menuItems={menuItems} />}
-
-      <h2>Текущие заказы</h2>
+      <h2 className="section-title">Заказы смены</h2>
       <OrderList orders={orders} readOnly />
+
+      {showMenu && (
+        <Modal title="Управление меню" onClose={() => setShowMenu(false)}>
+          <MenuManager socket={socket} menuItems={menuItems} />
+        </Modal>
+      )}
     </div>
   );
 }

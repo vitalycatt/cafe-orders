@@ -34,8 +34,6 @@ export default function MenuManager({ socket, menuItems }) {
 
   return (
     <div className="menu-manager">
-      <h2>Управление меню</h2>
-
       <form className="menu-form" onSubmit={handleAdd}>
         <input
           type="text"

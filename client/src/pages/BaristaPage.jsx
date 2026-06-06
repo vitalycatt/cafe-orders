@@ -49,31 +49,40 @@ export default function BaristaPage() {
   return (
     <div className="page barista-page">
       <header className="page-header">
-        <h1>Бариста</h1>
+        <h1>👨‍🍳 Бариста</h1>
         <div className="header-actions">
           <span className={`status-dot ${connected ? 'online' : 'offline'}`} />
           <button className="btn-sm" onClick={changeRole}>Сменить роль</button>
         </div>
       </header>
 
-      <section className="order-section">
-        <h2>Новые ({pending.length})</h2>
+      <section className="order-section order-section--pending">
+        <div className="order-section-header">
+          <h2>Новые</h2>
+          <span className="section-badge">{pending.length}</span>
+        </div>
         {pending.length === 0 && <p className="empty">Нет новых заказов</p>}
         {pending.map((order) => (
           <OrderCard key={order.id} order={order} onStatusChange={updateStatus} />
         ))}
       </section>
 
-      <section className="order-section">
-        <h2>В работе ({inProgress.length})</h2>
+      <section className="order-section order-section--progress">
+        <div className="order-section-header">
+          <h2>Готовится</h2>
+          <span className="section-badge">{inProgress.length}</span>
+        </div>
         {inProgress.length === 0 && <p className="empty">Нет заказов в работе</p>}
         {inProgress.map((order) => (
           <OrderCard key={order.id} order={order} onStatusChange={updateStatus} />
         ))}
       </section>
 
-      <section className="order-section">
-        <h2>Готово ({done.length})</h2>
+      <section className="order-section order-section--done">
+        <div className="order-section-header">
+          <h2>Готово</h2>
+          <span className="section-badge">{done.length}</span>
+        </div>
         {done.length === 0 && <p className="empty">Нет готовых заказов</p>}
         {done.map((order) => (
           <OrderCard key={order.id} order={order} onStatusChange={updateStatus} />
