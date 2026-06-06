@@ -328,26 +328,43 @@ input::placeholder { color: var(--muted); }
 .role-btn {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 32px 16px;
-  border: 2px solid var(--border);
+  justify-content: center;
+  padding: 40px 16px;
+  border: none;
   border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  color: var(--text);
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
   cursor: pointer;
   transition: all 0.2s;
+  letter-spacing: -0.01em;
 }
 
-.role-btn:active { transform: scale(0.97); box-shadow: var(--shadow-sm); }
-.cashier-btn     { border-color: var(--primary); }
-.barista-btn     { border-color: var(--done); }
+.role-btn:active { transform: scale(0.97); opacity: 0.9; }
 
-.role-icon  { font-size: 48px; }
-.role-label { font-weight: 700; }
+.cashier-btn {
+  background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+}
+
+.barista-btn {
+  background: linear-gradient(135deg, #134E2A 0%, #16A34A 100%);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.4);
+}
+
+/* ===== ROLE THEMES ===== */
+.app:has(.barista-page) { background: #F0FDF4; }
+.app:has(.cashier-page) { background: #EEF2FF; }
+
+.barista-page .page-header {
+  background: linear-gradient(135deg, #134E2A 0%, #16A34A 100%);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.35);
+}
+
+.barista-page .drink-price { color: #16A34A; }
+.barista-page .btn-primary { background: #16A34A; }
+.barista-page .status-dot.online { background: #4ADE80; box-shadow: 0 0 0 3px rgba(74,222,128,0.25); }
 
 /* ===== MENU MANAGER ===== */
 .menu-manager { display: flex; flex-direction: column; gap: 12px; }

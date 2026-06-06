@@ -49,7 +49,7 @@ export default function BaristaPage() {
   return (
     <div className="page barista-page">
       <header className="page-header">
-        <h1>👨‍🍳 Бариста</h1>
+        <h1>Бариста</h1>
         <div className="header-actions">
           <span className={`status-dot ${connected ? 'online' : 'offline'}`} />
           <button className="btn-sm" onClick={changeRole}>Сменить роль</button>

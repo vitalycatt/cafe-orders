@@ -51,7 +51,7 @@ export default function CashierPage() {
   return (
     <div className="page cashier-page">
       <header className="page-header">
-        <h1>☕ Кассир</h1>
+        <h1>Кассир</h1>
         <div className="header-actions">
           <span className={`status-dot ${connected ? 'online' : 'offline'}`} />
           <button className="btn-sm" onClick={changeRole}>Сменить роль</button>
@@ -62,10 +62,10 @@ export default function CashierPage() {
 
       <div className="section-actions">
         <button className="btn btn-secondary" onClick={() => setShowMenu(true)}>
-          🍽 Меню
+          Меню
         </button>
         <button className="btn btn-secondary" onClick={() => navigate('/report')}>
-          📊 Отчёт
+          Отчёт
         </button>
       </div>
 

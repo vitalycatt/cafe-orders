@@ -21,12 +21,10 @@ export default function RoleSelectPage() {
       <p className="subtitle">Выберите вашу роль</p>
       <div className="role-buttons">
         <button className="role-btn cashier-btn" onClick={() => selectRole('cashier')}>
-          <span className="role-icon">💰</span>
-          <span className="role-label">Кассир</span>
+          Кассир
         </button>
         <button className="role-btn barista-btn" onClick={() => selectRole('barista')}>
-          <span className="role-icon">☕</span>
-          <span className="role-label">Бариста</span>
+          Бариста
         </button>
       </div>
     </div>

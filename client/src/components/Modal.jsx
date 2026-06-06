@@ -13,7 +13,7 @@ export default function Modal({ title, onClose, children }) {
         <div className="modal-drag-handle" />
         <div className="modal-header">
           <h2>{title}</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">{children}</div>
       </div>
