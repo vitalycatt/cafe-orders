@@ -8,7 +8,7 @@ const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
-  if (typeof tg.requestFullscreen === 'function') {
+  if (parseFloat(tg.version || '0') >= 8.0) {
     tg.requestFullscreen();
   }
 }
