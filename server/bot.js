@@ -1,5 +1,11 @@
 const { Bot, InlineKeyboard } = require('grammy');
 
+if (process.env.NODE_ENV === 'development') {
+  console.log('Development mode — Telegram bot is disabled.');
+  module.exports = null;
+  return;
+}
+
 const token = process.env.BOT_TOKEN;
 if (!token || token === 'YOUR_BOT_TOKEN_HERE') {
   console.warn('BOT_TOKEN not set — Telegram bot is disabled.');
