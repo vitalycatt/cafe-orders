@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { CATEGORIES } from '../constants';
 
+const QUICK_TAGS = ['Безлактозное молоко'];
+
 export default function OrderForm({ socket, menuItems, onClose }) {
   const [step, setStep] = useState(0);
   const [quantities, setQuantities] = useState({});
@@ -17,6 +19,15 @@ export default function OrderForm({ socket, menuItems, onClose }) {
 
   const total = selectedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const totalQty = selectedItems.reduce((sum, i) => sum + i.quantity, 0);
+
+  const toggleTag = (tag) => {
+    setNotes((prev) => {
+      if (prev.includes(tag)) {
+        return prev.replace(tag, '').replace(/,\s*$|^,\s*/, '').trim();
+      }
+      return prev ? `${prev}, ${tag}` : tag;
+    });
+  };
 
   const changeQty = (id, delta) => {
     setQuantities((prev) => ({
@@ -125,13 +136,27 @@ export default function OrderForm({ socket, menuItems, onClose }) {
             autoFocus
           />
 
-          <textarea
-            className="wizard-textarea"
-            placeholder="Пожелания или комментарии (необязательно)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-          />
+          <div>
+            <textarea
+              className="wizard-textarea"
+              placeholder="Пожелания или комментарии (необязательно)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
+            <div className="wizard-tags">
+              {QUICK_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className={`tag-btn ${notes.includes(tag) ? 'active' : ''}`}
+                  onClick={() => toggleTag(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="wizard-order-summary">
             {selectedItems.map((item) => (

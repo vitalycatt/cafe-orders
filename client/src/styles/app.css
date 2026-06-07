@@ -853,6 +853,34 @@ th { font-weight: 700; color: var(--muted); font-size: 12px; text-transform: upp
 .wizard-nav { display: flex; gap: 8px; }
 .wizard-nav .btn { flex: 1; }
 
+.wizard-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tag-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.tag-btn:active { transform: scale(0.95); }
+
+.tag-btn.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
 /* Step 2: summary */
 .wizard-order-summary {
   background: var(--bg);
