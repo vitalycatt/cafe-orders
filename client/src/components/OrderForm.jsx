@@ -3,11 +3,15 @@ import { CATEGORIES } from '../constants';
 
 const QUICK_TAGS = ['Безлактозное молоко'];
 
-export default function OrderForm({ socket, menuItems, onClose }) {
+export default function OrderForm({ socket, menuItems, onClose, initialOrder }) {
   const [step, setStep] = useState(0);
-  const [quantities, setQuantities] = useState({});
-  const [notes, setNotes] = useState('');
-  const [customerName, setCustomerName] = useState('');
+  const [quantities, setQuantities] = useState(() =>
+    initialOrder
+      ? Object.fromEntries(initialOrder.items.map((i) => [i.menu_item_id, i.quantity]))
+      : {}
+  );
+  const [notes, setNotes] = useState(initialOrder?.notes || '');
+  const [customerName, setCustomerName] = useState(initialOrder?.customer_name || '');
   const [sending, setSending] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -95,18 +99,17 @@ export default function OrderForm({ socket, menuItems, onClose }) {
   const handleSubmit = () => {
     if (!customerName.trim() || selectedItems.length === 0 || sending) return;
     setSending(true);
-    socket.emit(
-      'order:create',
-      {
-        customer_name: customerName.trim(),
-        notes: notes.trim(),
-        items: selectedItems.map((i) => ({ menu_item_id: i.id, quantity: i.quantity })),
-      },
-      (res) => {
-        setSending(false);
-        if (res?.ok) onClose?.();
-      }
-    );
+    const event = initialOrder ? 'order:edit' : 'order:create';
+    const payload = {
+      ...(initialOrder && { id: initialOrder.id }),
+      customer_name: customerName.trim(),
+      notes: notes.trim(),
+      items: selectedItems.map((i) => ({ menu_item_id: i.id, quantity: i.quantity })),
+    };
+    socket.emit(event, payload, (res) => {
+      setSending(false);
+      if (res?.ok) onClose?.();
+    });
   };
 
   return (

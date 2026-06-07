@@ -93,6 +93,26 @@ io.on('connection', (socket) => {
     socket.emit('shift:report_data', report);
   });
 
+  socket.on('order:edit', async (data, callback) => {
+    try {
+      const order = await db.editOrder(data.id, data.customer_name, data.items, data.notes);
+      io.emit('order:updated', order);
+      if (typeof callback === 'function') callback({ ok: true });
+    } catch (err) {
+      socket.emit('error', { message: err.message });
+      if (typeof callback === 'function') callback({ ok: false, error: err.message });
+    }
+  });
+
+  socket.on('order:delete', async (data) => {
+    try {
+      await db.deleteOrder(data.id);
+      io.emit('order:deleted', data.id);
+    } catch (err) {
+      socket.emit('error', { message: err.message });
+    }
+  });
+
   // --- Customers autocomplete ---
   socket.on('customers:search', async (query, callback) => {
     try {

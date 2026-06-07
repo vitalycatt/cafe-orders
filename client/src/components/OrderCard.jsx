@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const STATUS_LABELS = {
   pending: 'Новый',
   in_progress: 'Готовится',
@@ -10,7 +12,17 @@ const STATUS_CLASSES = {
   done: 'status-done',
 };
 
-export default function OrderCard({ order, onStatusChange, readOnly }) {
+export default function OrderCard({ order, onStatusChange, readOnly, onEdit, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleDeleteClick = () => {
+    if (confirmDelete) {
+      onDelete(order.id);
+    } else {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3000);
+    }
+  };
   const time = order.created_at
     ? new Date(order.created_at + 'Z').toLocaleTimeString('ru-RU', {
         hour: '2-digit',
@@ -47,6 +59,24 @@ export default function OrderCard({ order, onStatusChange, readOnly }) {
       )}
 
       {order.notes && <div className="order-notes">{order.notes}</div>}
+
+      {(onEdit || onDelete) && (
+        <div className="order-card-actions">
+          {onEdit && (
+            <button className="btn-order-edit" onClick={() => onEdit(order)}>
+              Изменить
+            </button>
+          )}
+          {onDelete && (
+            <button
+              className={`btn-order-delete ${confirmDelete ? 'confirm' : ''}`}
+              onClick={handleDeleteClick}
+            >
+              {confirmDelete ? 'Точно удалить?' : 'Удалить'}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="order-card-footer">
         <span className={`status-badge ${STATUS_CLASSES[order.status]}`}>

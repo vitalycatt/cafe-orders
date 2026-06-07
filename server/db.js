@@ -246,6 +246,27 @@ async function getShiftReport(shiftDate) {
   };
 }
 
+async function editOrder(id, customerName, items, notes) {
+  if (!items || items.length === 0) throw new Error('Order must have at least one item');
+  await db.execute({
+    sql: 'UPDATE orders SET customer_name = ?, notes = ? WHERE id = ?',
+    args: [customerName, notes || null, id],
+  });
+  await db.execute({ sql: 'DELETE FROM order_items WHERE order_id = ?', args: [id] });
+  for (const item of items) {
+    await db.execute({
+      sql: 'INSERT INTO order_items (order_id, menu_item_id, quantity) VALUES (?, ?, ?)',
+      args: [id, item.menu_item_id, item.quantity || 1],
+    });
+  }
+  return getOrderById(id);
+}
+
+async function deleteOrder(id) {
+  await db.execute({ sql: 'DELETE FROM order_items WHERE order_id = ?', args: [id] });
+  await db.execute({ sql: 'DELETE FROM orders WHERE id = ?', args: [id] });
+}
+
 async function searchCustomers(query) {
   if (!query || query.trim().length < 1) return [];
   const result = await db.execute({
@@ -265,6 +286,8 @@ module.exports = {
   updateMenuItem,
   deleteMenuItem,
   createOrder,
+  editOrder,
+  deleteOrder,
   getOrdersByShift,
   updateOrderStatus,
   getShiftReport,

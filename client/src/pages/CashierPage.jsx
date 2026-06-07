@@ -13,6 +13,7 @@ export default function CashierPage() {
   const [menuItems, setMenuItems] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
   const [showOrder, setShowOrder] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
 
   const loadData = useCallback(() => {
     if (!socket) return;
@@ -31,6 +32,9 @@ export default function CashierPage() {
     socket.on('order:updated', (order) =>
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)))
     );
+    socket.on('order:deleted', (id) =>
+      setOrders((prev) => prev.filter((o) => o.id !== id))
+    );
     socket.on('menu:list', setMenuItems);
     socket.on('menu:changed', setMenuItems);
 
@@ -39,10 +43,13 @@ export default function CashierPage() {
       socket.off('orders:list', setOrders);
       socket.off('order:new');
       socket.off('order:updated');
+      socket.off('order:deleted');
       socket.off('menu:list', setMenuItems);
       socket.off('menu:changed', setMenuItems);
     };
   }, [socket, loadData]);
+
+  const handleDelete = (id) => socket.emit('order:delete', { id });
 
   const changeRole = () => {
     localStorage.removeItem('cafe_role');
@@ -73,7 +80,12 @@ export default function CashierPage() {
       </div>
 
       <h2 className="section-title">Заказы смены</h2>
-      <OrderList orders={orders} readOnly />
+      <OrderList
+        orders={orders}
+        readOnly
+        onEdit={setEditingOrder}
+        onDelete={handleDelete}
+      />
 
       {showMenu && (
         <Modal title="Управление меню" onClose={() => setShowMenu(false)}>
@@ -84,6 +96,17 @@ export default function CashierPage() {
       {showOrder && (
         <Modal title="Новый заказ" onClose={() => setShowOrder(false)}>
           <OrderForm socket={socket} menuItems={menuItems} onClose={() => setShowOrder(false)} />
+        </Modal>
+      )}
+
+      {editingOrder && (
+        <Modal title="Редактировать заказ" onClose={() => setEditingOrder(null)}>
+          <OrderForm
+            socket={socket}
+            menuItems={menuItems}
+            initialOrder={editingOrder}
+            onClose={() => setEditingOrder(null)}
+          />
         </Modal>
       )}
     </div>
