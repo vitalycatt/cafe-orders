@@ -545,6 +545,17 @@ input::placeholder { color: var(--muted); }
   flex: 1;
 }
 
+.modal:has(.order-wizard) {
+  height: calc(100vh - var(--safe-top) - 40px);
+}
+
+.modal-body:has(.order-wizard) {
+  padding: 16px 20px 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ===== SHIFT REPORT ===== */
 .shift-report { display: flex; flex-direction: column; gap: 16px; }
 
@@ -655,7 +666,14 @@ th { font-weight: 700; color: var(--muted); font-size: 12px; text-transform: upp
 }
 
 /* ===== ORDER WIZARD ===== */
-.order-wizard { display: flex; flex-direction: column; gap: 0; }
+.order-wizard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+}
 
 .wizard-steps {
   display: flex;
@@ -695,8 +713,14 @@ th { font-weight: 700; color: var(--muted); font-size: 12px; text-transform: upp
 
 .wizard-connector.done { background: var(--done); }
 
-/* Items list */
-.wizard-items { display: flex; flex-direction: column; }
+/* Items list — scrolls independently */
+.wizard-items {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
 
 .wizard-category { margin-bottom: 16px; }
 
@@ -775,15 +799,12 @@ th { font-weight: 700; color: var(--muted); font-size: 12px; text-transform: upp
   color: var(--text);
 }
 
-/* Sticky footer bar (step 0) */
+/* Footer bar — always visible at bottom (step 0) */
 .wizard-footer {
-  position: sticky;
-  bottom: 0;
-  margin: 12px -20px -24px;
-  padding: 12px 20px 24px;
+  flex-shrink: 0;
+  padding: 12px 0 20px;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  z-index: 1;
 }
 
 .wizard-bar {
@@ -798,8 +819,16 @@ th { font-weight: 700; color: var(--muted); font-size: 12px; text-transform: upp
 
 .wizard-hint { text-align: center; font-size: 14px; color: var(--muted); padding: 4px 0; }
 
-/* Steps 1 & 2 */
-.wizard-step-content { display: flex; flex-direction: column; gap: 14px; }
+/* Step 1 — scrollable if content overflows */
+.wizard-step-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  gap: 14px;
+  padding-bottom: 20px;
+}
 
 .wizard-textarea {
   width: 100%;

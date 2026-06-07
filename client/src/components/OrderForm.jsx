@@ -45,7 +45,7 @@ export default function OrderForm({ socket, menuItems, onClose }) {
   return (
     <div className="order-wizard">
       <div className="wizard-steps">
-        {['Позиции', 'Пожелания', 'Итог'].map((_label, i) => (
+        {['Позиции', 'Оформление'].map((_label, i) => (
           <div key={i} className="wizard-step-item">
             {i > 0 && <div className={`wizard-connector ${i <= step ? 'done' : ''}`} />}
             <div className={`wizard-step-num ${i === step ? 'active' : i < step ? 'done' : ''}`}>
@@ -117,32 +117,20 @@ export default function OrderForm({ socket, menuItems, onClose }) {
 
       {step === 1 && (
         <div className="wizard-step-content">
-          <textarea
-            className="wizard-textarea"
-            placeholder="Пожелания клиента (необязательно)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={4}
-          />
-          <div className="wizard-nav">
-            <button className="btn btn-secondary" onClick={() => setStep(0)}>
-              Назад
-            </button>
-            <button className="btn btn-primary" onClick={() => setStep(2)}>
-              Далее
-            </button>
-          </div>
-        </div>
-      )}
-
-      {step === 2 && (
-        <div className="wizard-step-content">
           <input
             type="text"
             placeholder="Имя клиента"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             autoFocus
+          />
+
+          <textarea
+            className="wizard-textarea"
+            placeholder="Пожелания или комментарии (необязательно)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
           />
 
           <div className="wizard-order-summary">
@@ -155,7 +143,6 @@ export default function OrderForm({ socket, menuItems, onClose }) {
                 <span className="summary-subtotal">{item.price * item.quantity} ₽</span>
               </div>
             ))}
-            {notes && <div className="wizard-summary-notes">{notes}</div>}
             <div className="wizard-summary-total">
               <span>Итого</span>
               <strong>{total} ₽</strong>
@@ -163,7 +150,7 @@ export default function OrderForm({ socket, menuItems, onClose }) {
           </div>
 
           <div className="wizard-nav">
-            <button className="btn btn-secondary" onClick={() => setStep(1)}>
+            <button className="btn btn-secondary" onClick={() => setStep(0)}>
               Назад
             </button>
             <button
