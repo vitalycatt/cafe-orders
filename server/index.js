@@ -33,7 +33,7 @@ io.on('connection', (socket) => {
 
   socket.on('order:create', async (data, callback) => {
     try {
-      const order = await db.createOrder(data.customer_name, data.menu_item_id, data.notes);
+      const order = await db.createOrder(data.customer_name, data.items, data.notes);
       io.emit('order:new', order);
       if (typeof callback === 'function') callback({ ok: true });
     } catch (err) {

@@ -31,7 +31,7 @@ export default function ShiftReport({ report }) {
           <table>
             <thead>
               <tr>
-                <th>Напиток</th>
+                <th>Позиция</th>
                 <th>Кол-во</th>
                 <th>Цена</th>
                 <th>Выручка</th>
@@ -59,8 +59,8 @@ export default function ShiftReport({ report }) {
               <tr>
                 <th>Время</th>
                 <th>Клиент</th>
-                <th>Напиток</th>
-                <th>Цена</th>
+                <th>Позиции</th>
+                <th>Сумма</th>
                 <th>Статус</th>
               </tr>
             </thead>
@@ -76,8 +76,15 @@ export default function ShiftReport({ report }) {
                       : ''}
                   </td>
                   <td>{order.customer_name}</td>
-                  <td>{order.drink_name}</td>
-                  <td>{order.price} ₽</td>
+                  <td>
+                    {(order.items || []).map((i, idx) => (
+                      <span key={idx}>
+                        {i.name}{i.quantity > 1 ? ` ×${i.quantity}` : ''}
+                        {idx < order.items.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </td>
+                  <td>{order.total ?? 0} ₽</td>
                   <td>{STATUS_LABELS[order.status]}</td>
                 </tr>
               ))}

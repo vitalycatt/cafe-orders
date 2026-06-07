@@ -12,6 +12,7 @@ export default function CashierPage() {
   const [orders, setOrders] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
+  const [showOrder, setShowOrder] = useState(false);
 
   const loadData = useCallback(() => {
     if (!socket) return;
@@ -58,7 +59,9 @@ export default function CashierPage() {
         </div>
       </header>
 
-      <OrderForm socket={socket} menuItems={menuItems} />
+      <button className="btn btn-primary btn-new-order" onClick={() => setShowOrder(true)}>
+        + Новый заказ
+      </button>
 
       <div className="section-actions">
         <button className="btn btn-secondary" onClick={() => setShowMenu(true)}>
@@ -75,6 +78,12 @@ export default function CashierPage() {
       {showMenu && (
         <Modal title="Управление меню" onClose={() => setShowMenu(false)}>
           <MenuManager socket={socket} menuItems={menuItems} />
+        </Modal>
+      )}
+
+      {showOrder && (
+        <Modal title="Новый заказ" onClose={() => setShowOrder(false)}>
+          <OrderForm socket={socket} menuItems={menuItems} onClose={() => setShowOrder(false)} />
         </Modal>
       )}
     </div>

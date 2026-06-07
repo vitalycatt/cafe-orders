@@ -38,9 +38,13 @@ export default function ReceiptPreview({ report, onClose }) {
             <>
               <div className="receipt-section-title">ЗАКАЗЫ</div>
               {report.orders.map((order) => (
-                <div key={order.id} className="receipt-row">
-                  <span>{order.drink_name}</span>
-                  <span>{order.price} P</span>
+                <div key={order.id}>
+                  {(order.items || []).map((item, idx) => (
+                    <div key={idx} className="receipt-row">
+                      <span>{item.name}{item.quantity > 1 ? ` x${item.quantity}` : ''}</span>
+                      <span>{item.price * item.quantity} P</span>
+                    </div>
+                  ))}
                 </div>
               ))}
               <div className="receipt-line">{SEPARATOR}</div>

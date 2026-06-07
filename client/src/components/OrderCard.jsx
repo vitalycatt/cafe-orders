@@ -18,17 +18,36 @@ export default function OrderCard({ order, onStatusChange, readOnly }) {
       })
     : '';
 
+  const items = order.items || [];
+  const total = order.total ?? items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
   return (
     <div className={`order-card ${STATUS_CLASSES[order.status]}`}>
       <div className="order-card-header">
         <strong>{order.customer_name}</strong>
         <span className="order-time">{time}</span>
       </div>
-      <div className="order-card-body">
-        <span className="drink-name">{order.drink_name}</span>
-        <span className="drink-price">{order.price} ₽</span>
+
+      <div className="order-items-list">
+        {items.map((item, idx) => (
+          <div key={idx} className="order-item-row">
+            <span className="order-item-name">
+              {item.name}
+              {item.quantity > 1 && <span className="order-item-qty"> ×{item.quantity}</span>}
+            </span>
+            <span className="order-item-subtotal">{item.price * item.quantity} ₽</span>
+          </div>
+        ))}
       </div>
+
+      {items.length > 1 && (
+        <div className="order-total">
+          Итого: <strong>{total} ₽</strong>
+        </div>
+      )}
+
       {order.notes && <div className="order-notes">{order.notes}</div>}
+
       <div className="order-card-footer">
         <span className={`status-badge ${STATUS_CLASSES[order.status]}`}>
           {STATUS_LABELS[order.status]}
