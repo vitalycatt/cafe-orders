@@ -93,6 +93,16 @@ io.on('connection', (socket) => {
     socket.emit('shift:report_data', report);
   });
 
+  // --- Customers autocomplete ---
+  socket.on('customers:search', async (query, callback) => {
+    try {
+      const names = await db.searchCustomers(query);
+      if (typeof callback === 'function') callback(names);
+    } catch {
+      if (typeof callback === 'function') callback([]);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });

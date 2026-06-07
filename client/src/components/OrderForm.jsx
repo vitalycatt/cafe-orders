@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CATEGORIES } from '../constants';
 
 const QUICK_TAGS = ['Безлактозное молоко'];
@@ -9,6 +9,9 @@ export default function OrderForm({ socket, menuItems, onClose }) {
   const [notes, setNotes] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [sending, setSending] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef(null);
 
   const selectedItems = Object.entries(quantities)
     .filter(([, qty]) => qty > 0)
@@ -19,6 +22,59 @@ export default function OrderForm({ socket, menuItems, onClose }) {
 
   const total = selectedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const totalQty = selectedItems.reduce((sum, i) => sum + i.quantity, 0);
+
+  // Ghost text: top suggestion if it starts with what the user typed
+  const ghostSuggestion =
+    suggestions[0] &&
+    customerName.length > 0 &&
+    suggestions[0].toLowerCase().startsWith(customerName.toLowerCase())
+      ? suggestions[0]
+      : null;
+
+  const handleNameChange = (value) => {
+    setCustomerName(value);
+    clearTimeout(debounceRef.current);
+    if (value.trim().length < 1) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      socket.emit('customers:search', value, (names) => {
+        setSuggestions(names);
+        setShowSuggestions(names.length > 0);
+      });
+    }, 200);
+  };
+
+  const handleNameKeyDown = (e) => {
+    if ((e.key === 'Tab' || e.key === 'ArrowRight') && ghostSuggestion) {
+      e.preventDefault();
+      pickSuggestion(ghostSuggestion);
+    }
+  };
+
+  const pickSuggestion = (name) => {
+    setCustomerName(name);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  // Bold the portion of a suggestion that matches the query
+  const highlightMatch = (text, query) => {
+    if (!query) return text;
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return text;
+    return (
+      <>
+        {text.slice(0, idx)}
+        <strong>{text.slice(idx, idx + query.length)}</strong>
+        {text.slice(idx + query.length)}
+      </>
+    );
+  };
+
+  useEffect(() => () => clearTimeout(debounceRef.current), []);
 
   const toggleTag = (tag) => {
     setNotes((prev) => {
@@ -128,13 +184,36 @@ export default function OrderForm({ socket, menuItems, onClose }) {
 
       {step === 1 && (
         <div className="wizard-step-content">
-          <input
-            type="text"
-            placeholder="Имя клиента"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            autoFocus
-          />
+          <div className="autocomplete">
+            <div className="autocomplete-input-wrap">
+              {ghostSuggestion && (
+                <div className="input-ghost" aria-hidden="true">
+                  <span className="ghost-typed">{customerName}</span>
+                  <span className="ghost-completion">{ghostSuggestion.slice(customerName.length)}</span>
+                </div>
+              )}
+              <input
+                type="text"
+                placeholder="Имя клиента"
+                value={customerName}
+                onChange={(e) => handleNameChange(e.target.value)}
+                onKeyDown={handleNameKeyDown}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                className={ghostSuggestion ? 'ghost-active' : ''}
+                autoFocus
+              />
+            </div>
+            {showSuggestions && (
+              <ul className="autocomplete-list">
+                {suggestions.map((name) => (
+                  <li key={name} className="autocomplete-item" onPointerDown={() => pickSuggestion(name)}>
+                    {highlightMatch(name, customerName)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           <div>
             <textarea

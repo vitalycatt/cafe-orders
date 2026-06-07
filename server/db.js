@@ -246,6 +246,18 @@ async function getShiftReport(shiftDate) {
   };
 }
 
+async function searchCustomers(query) {
+  if (!query || query.trim().length < 1) return [];
+  const result = await db.execute({
+    sql: `SELECT DISTINCT customer_name FROM orders
+          WHERE customer_name LIKE ?
+          ORDER BY customer_name
+          LIMIT 8`,
+    args: [`%${query.trim()}%`],
+  });
+  return result.rows.map((r) => r.customer_name);
+}
+
 module.exports = {
   initDb,
   getMenuItems,
@@ -256,4 +268,5 @@ module.exports = {
   getOrdersByShift,
   updateOrderStatus,
   getShiftReport,
+  searchCustomers,
 };
