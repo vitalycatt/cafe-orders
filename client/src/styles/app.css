@@ -393,19 +393,87 @@ input::placeholder { color: var(--muted); }
 .menu-item.editing input { padding: 8px 10px; font-size: 14px; }
 .menu-item.editing input[type='number'] { max-width: 80px; }
 
-.menu-item-name  { flex: 1; font-weight: 600; font-size: 15px; }
-.menu-item-price { font-weight: 800; color: var(--primary); margin-right: 4px; }
+.menu-item-name    { flex: 1; font-weight: 600; font-size: 15px; }
+.menu-item-price   { font-weight: 800; color: var(--primary); margin-right: 4px; }
+.menu-item-actions { display: flex; gap: 6px; }
 
-.menu-item .btn-sm {
+.menu-item .btn-sm, .btn-primary-sm {
   background: var(--border);
   color: var(--text);
   border: none;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.menu-item .btn-danger.btn-sm {
+.btn-primary-sm { background: var(--primary); color: #fff; }
+
+.btn-danger-sm {
   background: var(--danger-bg);
   color: var(--danger);
   border: none;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Add form */
+.menu-add-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.menu-add-row  { display: flex; gap: 8px; }
+.menu-add-row input[type='text']   { flex: 1; }
+.menu-add-row input[type='number'] { width: 90px; }
+.menu-add-row select               { flex: 1; }
+.menu-add-row .btn                 { white-space: nowrap; }
+
+/* Category sections */
+.menu-categories { display: flex; flex-direction: column; gap: 16px; }
+
+.menu-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.menu-category-count {
+  background: var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 20px;
+}
+
+.menu-empty {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 10px;
+  text-align: center;
+}
+
+/* Editing row */
+.menu-item.editing {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-item.editing input,
+.menu-item.editing select {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
 }
 
 /* ===== MODAL ===== */

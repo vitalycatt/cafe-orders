@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CATEGORIES } from '../constants';
 
 export default function OrderForm({ socket, menuItems }) {
   const [customerName, setCustomerName] = useState('');
@@ -40,12 +41,20 @@ export default function OrderForm({ socket, menuItems }) {
         required
       />
       <select value={menuItemId} onChange={(e) => setMenuItemId(e.target.value)} required>
-        <option value="">Выберите напиток</option>
-        {menuItems.map((item) => (
-          <option key={item.id} value={item.id}>
-            {item.name} — {item.price} ₽
-          </option>
-        ))}
+        <option value="">Выберите позицию</option>
+        {CATEGORIES.map((cat) => {
+          const items = menuItems.filter((i) => (i.category || 'coffee') === cat.value);
+          if (items.length === 0) return null;
+          return (
+            <optgroup key={cat.value} label={cat.label}>
+              {items.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} — {item.price} ₽
+                </option>
+              ))}
+            </optgroup>
+          );
+        })}
       </select>
       <input
         type="text"

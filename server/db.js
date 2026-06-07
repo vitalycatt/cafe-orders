@@ -11,9 +11,18 @@ async function initDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
       price REAL NOT NULL,
-      available INTEGER DEFAULT 1
+      available INTEGER DEFAULT 1,
+      category TEXT NOT NULL DEFAULT 'coffee'
     )
   `);
+
+  // Migration: add category column to existing tables
+  try {
+    await db.execute("ALTER TABLE menu_items ADD COLUMN category TEXT NOT NULL DEFAULT 'coffee'");
+  } catch {
+    // Column already exists
+  }
+
   await db.execute(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,10 +44,10 @@ async function getMenuItems() {
   return result.rows;
 }
 
-async function addMenuItem(name, price) {
+async function addMenuItem(name, price, category = 'coffee') {
   const result = await db.execute({
-    sql: 'INSERT INTO menu_items (name, price) VALUES (?, ?)',
-    args: [name, price],
+    sql: 'INSERT INTO menu_items (name, price, category) VALUES (?, ?, ?)',
+    args: [name, price, category],
   });
   const item = await db.execute({
     sql: 'SELECT * FROM menu_items WHERE id = ?',
@@ -47,10 +56,10 @@ async function addMenuItem(name, price) {
   return item.rows[0];
 }
 
-async function updateMenuItem(id, name, price) {
+async function updateMenuItem(id, name, price, category) {
   await db.execute({
-    sql: 'UPDATE menu_items SET name = ?, price = ? WHERE id = ?',
-    args: [name, price, id],
+    sql: 'UPDATE menu_items SET name = ?, price = ?, category = ? WHERE id = ?',
+    args: [name, price, category, id],
   });
   const result = await db.execute({
     sql: 'SELECT * FROM menu_items WHERE id = ?',

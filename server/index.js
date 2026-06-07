@@ -59,7 +59,7 @@ io.on('connection', (socket) => {
 
   socket.on('menu:add', async (data) => {
     try {
-      await db.addMenuItem(data.name, data.price);
+      await db.addMenuItem(data.name, data.price, data.category);
       const items = await db.getMenuItems();
       io.emit('menu:changed', items);
     } catch (err) {
@@ -69,7 +69,7 @@ io.on('connection', (socket) => {
 
   socket.on('menu:update', async (data) => {
     try {
-      await db.updateMenuItem(data.id, data.name, data.price);
+      await db.updateMenuItem(data.id, data.name, data.price, data.category);
       const items = await db.getMenuItems();
       io.emit('menu:changed', items);
     } catch (err) {
