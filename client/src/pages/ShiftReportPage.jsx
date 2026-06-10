@@ -38,7 +38,7 @@ export default function ShiftReportPage() {
       {report ? <ShiftReport report={report} /> : <p>Загрузка...</p>}
 
       {showReceipt && report && (
-        <ReceiptPreview report={report} onClose={() => setShowReceipt(false)} />
+        <ReceiptPreview report={report} onClose={() => setShowReceipt(false)} socket={socket} />
       )}
     </div>
   );

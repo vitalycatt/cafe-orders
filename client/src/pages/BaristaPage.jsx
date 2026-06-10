@@ -24,12 +24,16 @@ export default function BaristaPage() {
     socket.on('order:updated', (order) =>
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)))
     );
+    socket.on('order:deleted', (id) =>
+      setOrders((prev) => prev.filter((o) => o.id !== id))
+    );
 
     return () => {
       socket.off('connect', loadOrders);
       socket.off('orders:list', setOrders);
       socket.off('order:new');
       socket.off('order:updated');
+      socket.off('order:deleted');
     };
   }, [socket, loadOrders]);
 
