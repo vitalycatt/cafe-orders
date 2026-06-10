@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Coin from './Coin';
 
 const STATUS_LABELS = {
   pending: 'Новый',
@@ -47,14 +48,14 @@ export default function OrderCard({ order, onStatusChange, readOnly, onEdit, onD
               {item.name}
               {item.quantity > 1 && <span className="order-item-qty"> ×{item.quantity}</span>}
             </span>
-            <span className="order-item-subtotal">{item.price * item.quantity} ₽</span>
+            <span className="order-item-subtotal">{item.price * item.quantity}<Coin /></span>
           </div>
         ))}
       </div>
 
       {items.length > 1 && (
         <div className="order-total">
-          Итого: <strong>{total} ₽</strong>
+          Итого: <strong>{total}<Coin /></strong>
         </div>
       )}
 

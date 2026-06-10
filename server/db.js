@@ -1,7 +1,10 @@
-const { createClient } = require('@libsql/client');
+const { createClient } = require("@libsql/client");
 
 const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || `file:${process.env.DATABASE_PATH || 'cafe.db'}`,
+  url:
+    process.env.TURSO_DATABASE_URL ||
+    `file:${process.env.DATABASE_PATH || "cafe.db"}`,
+
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
@@ -17,7 +20,9 @@ async function initDb() {
   `);
 
   try {
-    await db.execute("ALTER TABLE menu_items ADD COLUMN category TEXT NOT NULL DEFAULT 'coffee'");
+    await db.execute(
+      "ALTER TABLE menu_items ADD COLUMN category TEXT NOT NULL DEFAULT 'coffee'",
+    );
   } catch {
     // Column already exists
   }
@@ -57,12 +62,12 @@ async function initDb() {
 
   // Migration: if orders still has legacy menu_item_id column, move to order_items
   try {
-    const info = await db.execute('PRAGMA table_info(orders)');
-    const hasMenuItemId = info.rows.some((col) => col.name === 'menu_item_id');
+    const info = await db.execute("PRAGMA table_info(orders)");
+    const hasMenuItemId = info.rows.some((col) => col.name === "menu_item_id");
 
     if (hasMenuItemId) {
       // Disable FK so we can drop the orders table while order_items references it
-      await db.execute('PRAGMA foreign_keys = OFF');
+      await db.execute("PRAGMA foreign_keys = OFF");
       try {
         await db.batch(
           [
@@ -84,34 +89,36 @@ async function initDb() {
               sql: `INSERT INTO orders_new (id, customer_name, notes, status, created_at, shift_date)
                     SELECT id, customer_name, notes, status, created_at, shift_date FROM orders`,
             },
-            { sql: 'DROP TABLE orders' },
-            { sql: 'ALTER TABLE orders_new RENAME TO orders' },
+            { sql: "DROP TABLE orders" },
+            { sql: "ALTER TABLE orders_new RENAME TO orders" },
           ],
-          'write'
+          "write",
         );
       } finally {
-        await db.execute('PRAGMA foreign_keys = ON');
+        await db.execute("PRAGMA foreign_keys = ON");
       }
     }
   } catch (err) {
-    console.error('Orders migration error:', err);
+    console.error("Orders migration error:", err);
   }
 }
 
 // --- Menu ---
 
 async function getMenuItems() {
-  const result = await db.execute('SELECT * FROM menu_items WHERE available = 1 ORDER BY name');
+  const result = await db.execute(
+    "SELECT * FROM menu_items WHERE available = 1 ORDER BY name",
+  );
   return result.rows;
 }
 
-async function addMenuItem(name, price, category = 'coffee') {
+async function addMenuItem(name, price, category = "coffee") {
   const result = await db.execute({
-    sql: 'INSERT INTO menu_items (name, price, category) VALUES (?, ?, ?)',
+    sql: "INSERT INTO menu_items (name, price, category) VALUES (?, ?, ?)",
     args: [name, price, category],
   });
   const item = await db.execute({
-    sql: 'SELECT * FROM menu_items WHERE id = ?',
+    sql: "SELECT * FROM menu_items WHERE id = ?",
     args: [result.lastInsertRowid],
   });
   return item.rows[0];
@@ -119,11 +126,11 @@ async function addMenuItem(name, price, category = 'coffee') {
 
 async function updateMenuItem(id, name, price, category) {
   await db.execute({
-    sql: 'UPDATE menu_items SET name = ?, price = ?, category = ? WHERE id = ?',
+    sql: "UPDATE menu_items SET name = ?, price = ?, category = ? WHERE id = ?",
     args: [name, price, category, id],
   });
   const result = await db.execute({
-    sql: 'SELECT * FROM menu_items WHERE id = ?',
+    sql: "SELECT * FROM menu_items WHERE id = ?",
     args: [id],
   });
   return result.rows[0];
@@ -131,7 +138,7 @@ async function updateMenuItem(id, name, price, category) {
 
 async function deleteMenuItem(id) {
   await db.execute({
-    sql: 'UPDATE menu_items SET available = 0 WHERE id = ?',
+    sql: "UPDATE menu_items SET available = 0 WHERE id = ?",
     args: [id],
   });
 }
@@ -139,27 +146,29 @@ async function deleteMenuItem(id) {
 // --- Orders ---
 
 async function createOrder(customerName, items, notes) {
-  if (!items || items.length === 0) throw new Error('Order must have at least one item');
+  if (!items || items.length === 0)
+    throw new Error("Order must have at least one item");
 
   const result = await db.execute({
-    sql: 'INSERT INTO orders (customer_name, notes) VALUES (?, ?)',
+    sql: "INSERT INTO orders (customer_name, notes) VALUES (?, ?)",
     args: [customerName, notes || null],
   });
   const orderId = result.lastInsertRowid;
 
-  for (const item of items) {
-    await db.execute({
-      sql: 'INSERT INTO order_items (order_id, menu_item_id, quantity) VALUES (?, ?, ?)',
+  await db.batch(
+    items.map((item) => ({
+      sql: "INSERT INTO order_items (order_id, menu_item_id, quantity) VALUES (?, ?, ?)",
       args: [orderId, item.menu_item_id, item.quantity || 1],
-    });
-  }
+    })),
+    "write",
+  );
 
   return getOrderById(orderId);
 }
 
 async function getOrderById(id) {
   const orderResult = await db.execute({
-    sql: 'SELECT * FROM orders WHERE id = ?',
+    sql: "SELECT * FROM orders WHERE id = ?",
     args: [id],
   });
   const order = orderResult.rows[0];
@@ -182,14 +191,14 @@ async function getOrdersByShift(shiftDate) {
   const date = shiftDate || new Date().toISOString().slice(0, 10);
 
   const ordersResult = await db.execute({
-    sql: 'SELECT * FROM orders WHERE shift_date = ? ORDER BY created_at ASC',
+    sql: "SELECT * FROM orders WHERE shift_date = ? ORDER BY created_at ASC",
     args: [date],
   });
 
   if (ordersResult.rows.length === 0) return [];
 
   const orderIds = ordersResult.rows.map((o) => o.id);
-  const placeholders = orderIds.map(() => '?').join(',');
+  const placeholders = orderIds.map(() => "?").join(",");
 
   const itemsResult = await db.execute({
     sql: `SELECT oi.order_id, oi.id, oi.quantity, m.id AS menu_item_id, m.name, m.price, m.category
@@ -214,7 +223,7 @@ async function getOrdersByShift(shiftDate) {
 
 async function updateOrderStatus(id, status) {
   await db.execute({
-    sql: 'UPDATE orders SET status = ? WHERE id = ?',
+    sql: "UPDATE orders SET status = ? WHERE id = ?",
     args: [status, id],
   });
   return getOrderById(id);
@@ -233,7 +242,7 @@ async function getShiftReport(shiftDate) {
         summary[item.name] = { count: 0, revenue: 0, price: item.price };
       }
       summary[item.name].count += item.quantity;
-      if (order.status === 'done') {
+      if (order.status === "done") {
         const itemRevenue = item.price * item.quantity;
         summary[item.name].revenue += itemRevenue;
         totalRevenue += itemRevenue;
@@ -252,29 +261,41 @@ async function getShiftReport(shiftDate) {
     })),
     totalRevenue,
     totalOrders: orders.length,
-    completedOrders: orders.filter((o) => o.status === 'done').length,
+    completedOrders: orders.filter((o) => o.status === "done").length,
   };
 }
 
 async function editOrder(id, customerName, items, notes) {
-  if (!items || items.length === 0) throw new Error('Order must have at least one item');
-  await db.execute({
-    sql: 'UPDATE orders SET customer_name = ?, notes = ? WHERE id = ?',
-    args: [customerName, notes || null, id],
-  });
-  await db.execute({ sql: 'DELETE FROM order_items WHERE order_id = ?', args: [id] });
-  for (const item of items) {
-    await db.execute({
-      sql: 'INSERT INTO order_items (order_id, menu_item_id, quantity) VALUES (?, ?, ?)',
-      args: [id, item.menu_item_id, item.quantity || 1],
-    });
-  }
+  if (!items || items.length === 0)
+    throw new Error("Order must have at least one item");
+
+  await db.batch(
+    [
+      {
+        sql: "UPDATE orders SET customer_name = ?, notes = ? WHERE id = ?",
+        args: [customerName, notes || null, id],
+      },
+      {
+        sql: "DELETE FROM order_items WHERE order_id = ?",
+        args: [id],
+      },
+      ...items.map((item) => ({
+        sql: "INSERT INTO order_items (order_id, menu_item_id, quantity) VALUES (?, ?, ?)",
+        args: [id, item.menu_item_id, item.quantity || 1],
+      })),
+    ],
+    "write",
+  );
+
   return getOrderById(id);
 }
 
 async function deleteOrder(id) {
-  await db.execute({ sql: 'DELETE FROM order_items WHERE order_id = ?', args: [id] });
-  await db.execute({ sql: 'DELETE FROM orders WHERE id = ?', args: [id] });
+  await db.execute({
+    sql: "DELETE FROM order_items WHERE order_id = ?",
+    args: [id],
+  });
+  await db.execute({ sql: "DELETE FROM orders WHERE id = ?", args: [id] });
 }
 
 async function saveBotUser(chatId, username, firstName, lastName) {
@@ -287,7 +308,7 @@ async function saveBotUser(chatId, username, firstName, lastName) {
 
 async function getBotUsers() {
   const result = await db.execute(
-    'SELECT * FROM bot_users ORDER BY first_name, last_name'
+    "SELECT * FROM bot_users ORDER BY first_name, last_name",
   );
   return result.rows;
 }

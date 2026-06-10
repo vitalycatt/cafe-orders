@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Coin from './Coin';
 import { CATEGORIES } from '../constants';
 
 const QUICK_TAGS = ['Безлактозное молоко'];
@@ -140,7 +141,7 @@ export default function OrderForm({ socket, menuItems, onClose, initialOrder }) 
                       <div key={item.id} className={`wizard-item ${qty > 0 ? 'selected' : ''}`}>
                         <div className="wizard-item-info">
                           <span className="wizard-item-name">{item.name}</span>
-                          <span className="wizard-item-price">{item.price} ₽</span>
+                          <span className="wizard-item-price">{item.price}<Coin /></span>
                         </div>
                         <div className="wizard-qty">
                           <button
@@ -172,7 +173,7 @@ export default function OrderForm({ socket, menuItems, onClose, initialOrder }) 
             {selectedItems.length > 0 ? (
               <div className="wizard-bar">
                 <span className="wizard-bar-info">
-                  {totalQty} поз. · <strong>{total} ₽</strong>
+                  {totalQty} поз. · <strong>{total}<Coin /></strong>
                 </span>
                 <button className="btn btn-primary" onClick={() => setStep(1)}>
                   Далее
@@ -247,12 +248,12 @@ export default function OrderForm({ socket, menuItems, onClose, initialOrder }) 
                   {item.name}
                   {item.quantity > 1 && <span className="summary-qty"> ×{item.quantity}</span>}
                 </span>
-                <span className="summary-subtotal">{item.price * item.quantity} ₽</span>
+                <span className="summary-subtotal">{item.price * item.quantity}<Coin /></span>
               </div>
             ))}
             <div className="wizard-summary-total">
               <span>Итого</span>
-              <strong>{total} ₽</strong>
+              <strong>{total}<Coin /></strong>
             </div>
           </div>
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Coin from './Coin';
 import { CATEGORIES } from '../constants';
 
 export default function MenuManager({ socket, menuItems }) {
@@ -119,7 +120,7 @@ export default function MenuManager({ socket, menuItems }) {
                   ) : (
                     <div key={item.id} className="menu-item">
                       <span className="menu-item-name">{item.name}</span>
-                      <span className="menu-item-price">{item.price} ₽</span>
+                      <span className="menu-item-price">{item.price}<Coin /></span>
                       <button className="btn btn-sm" onClick={() => startEdit(item)}>Изм.</button>
                       <button className="btn btn-sm btn-danger-sm" onClick={() => handleDelete(item.id)}>Удал.</button>
                     </div>

@@ -1,3 +1,5 @@
+import Coin from './Coin';
+
 const STATUS_LABELS = {
   pending: 'Новый',
   in_progress: 'Готовится',
@@ -19,7 +21,7 @@ export default function ShiftReport({ report }) {
             <span className="stat-label">Выполнено</span>
           </div>
           <div className="stat highlight">
-            <span className="stat-value">{report.totalRevenue} ₽</span>
+            <span className="stat-value">{report.totalRevenue}<Coin /></span>
             <span className="stat-label">Выручка</span>
           </div>
         </div>
@@ -42,8 +44,8 @@ export default function ShiftReport({ report }) {
                 <tr key={item.name}>
                   <td>{item.name}</td>
                   <td>{item.count}</td>
-                  <td>{item.price} ₽</td>
-                  <td>{item.revenue} ₽</td>
+                  <td>{item.price}<Coin /></td>
+                  <td>{item.revenue}<Coin /></td>
                 </tr>
               ))}
             </tbody>
@@ -84,7 +86,7 @@ export default function ShiftReport({ report }) {
                       </span>
                     ))}
                   </td>
-                  <td>{order.total ?? 0} ₽</td>
+                  <td>{order.total ?? 0}<Coin /></td>
                   <td>{STATUS_LABELS[order.status]}</td>
                 </tr>
               ))}
