@@ -1,6 +1,9 @@
 /* ===== TOKENS ===== */
 :root {
-  --safe-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-top: max(
+    calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)),
+    env(safe-area-inset-top, 0px)
+  );
 
   --bg:      #F1F5F9;
   --surface: #FFFFFF;
