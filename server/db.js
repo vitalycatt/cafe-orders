@@ -119,7 +119,7 @@ async function addMenuItem(name, price, category = "coffee") {
   });
   const item = await db.execute({
     sql: "SELECT * FROM menu_items WHERE id = ?",
-    args: [result.lastInsertRowid],
+    args: [Number(result.lastInsertRowid)],
   });
   return item.rows[0];
 }
@@ -153,7 +153,7 @@ async function createOrder(customerName, items, notes) {
     sql: "INSERT INTO orders (customer_name, notes) VALUES (?, ?)",
     args: [customerName, notes || null],
   });
-  const orderId = result.lastInsertRowid;
+  const orderId = Number(result.lastInsertRowid);
 
   await db.batch(
     items.map((item) => ({

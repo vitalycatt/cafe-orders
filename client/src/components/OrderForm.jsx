@@ -109,7 +109,13 @@ export default function OrderForm({ socket, menuItems, onClose, initialOrder }) 
     };
     socket.emit(event, payload, (res) => {
       setSending(false);
-      if (res?.ok) onClose?.();
+      if (res?.ok) {
+        onClose?.();
+      } else {
+        const msg = res?.error || 'Не удалось создать заказ';
+        console.error('order create/edit failed:', res);
+        alert(`Ошибка: ${msg}`);
+      }
     });
   };
 

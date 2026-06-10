@@ -39,6 +39,7 @@ io.on('connection', (socket) => {
       io.emit('order:new', order);
       if (typeof callback === 'function') callback({ ok: true });
     } catch (err) {
+      console.error('order:create failed:', err);
       socket.emit('error', { message: err.message });
       if (typeof callback === 'function') callback({ ok: false, error: err.message });
     }
@@ -101,6 +102,7 @@ io.on('connection', (socket) => {
       io.emit('order:updated', order);
       if (typeof callback === 'function') callback({ ok: true });
     } catch (err) {
+      console.error('order:edit failed:', err);
       socket.emit('error', { message: err.message });
       if (typeof callback === 'function') callback({ ok: false, error: err.message });
     }
