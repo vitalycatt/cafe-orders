@@ -35,7 +35,11 @@ export default function ShiftReportPage() {
         </div>
       </header>
 
-      {report ? <ShiftReport report={report} /> : <p>Загрузка...</p>}
+      {report ? <ShiftReport report={report} /> : (
+        <div className="loader-center">
+          <div className="spinner" />
+        </div>
+      )}
 
       {showReceipt && report && (
         <ReceiptPreview report={report} onClose={() => setShowReceipt(false)} />

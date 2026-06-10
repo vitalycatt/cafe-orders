@@ -11,6 +11,8 @@ export default function CashierPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [menuLoading, setMenuLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [showOrder, setShowOrder] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
@@ -27,7 +29,7 @@ export default function CashierPage() {
     loadData();
 
     socket.on('connect', loadData);
-    socket.on('orders:list', setOrders);
+    socket.on('orders:list', (data) => { setOrders(data); setOrdersLoading(false); });
     socket.on('order:new', (order) => setOrders((prev) => [...prev, order]));
     socket.on('order:updated', (order) =>
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)))
@@ -35,16 +37,16 @@ export default function CashierPage() {
     socket.on('order:deleted', (id) =>
       setOrders((prev) => prev.filter((o) => o.id !== id))
     );
-    socket.on('menu:list', setMenuItems);
+    socket.on('menu:list', (data) => { setMenuItems(data); setMenuLoading(false); });
     socket.on('menu:changed', setMenuItems);
 
     return () => {
       socket.off('connect', loadData);
-      socket.off('orders:list', setOrders);
+      socket.off('orders:list');
       socket.off('order:new');
       socket.off('order:updated');
       socket.off('order:deleted');
-      socket.off('menu:list', setMenuItems);
+      socket.off('menu:list');
       socket.off('menu:changed', setMenuItems);
     };
   }, [socket, loadData]);
@@ -79,17 +81,31 @@ export default function CashierPage() {
         </button>
       </div>
 
-      <h2 className="section-title">Заказы смены</h2>
-      <OrderList
-        orders={orders}
-        readOnly
-        onEdit={setEditingOrder}
-        onDelete={handleDelete}
-      />
+      {ordersLoading ? (
+        <div className="loader-center">
+          <div className="spinner" />
+        </div>
+      ) : (
+        <>
+          <h2 className="section-title">Заказы смены</h2>
+          <OrderList
+            orders={orders}
+            readOnly
+            onEdit={setEditingOrder}
+            onDelete={handleDelete}
+          />
+        </>
+      )}
 
       {showMenu && (
         <Modal title="Управление меню" onClose={() => setShowMenu(false)}>
-          <MenuManager socket={socket} menuItems={menuItems} />
+          {menuLoading ? (
+            <div className="loader-center">
+              <div className="spinner" />
+            </div>
+          ) : (
+            <MenuManager socket={socket} menuItems={menuItems} />
+          )}
         </Modal>
       )}
 
