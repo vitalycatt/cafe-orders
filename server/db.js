@@ -45,6 +45,16 @@ async function initDb() {
     )
   `);
 
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS bot_users (
+      chat_id INTEGER PRIMARY KEY,
+      username TEXT,
+      first_name TEXT,
+      last_name TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
   // Migration: if orders still has legacy menu_item_id column, move to order_items
   try {
     const info = await db.execute('PRAGMA table_info(orders)');
@@ -267,6 +277,21 @@ async function deleteOrder(id) {
   await db.execute({ sql: 'DELETE FROM orders WHERE id = ?', args: [id] });
 }
 
+async function saveBotUser(chatId, username, firstName, lastName) {
+  await db.execute({
+    sql: `INSERT OR REPLACE INTO bot_users (chat_id, username, first_name, last_name, updated_at)
+          VALUES (?, ?, ?, ?, datetime('now'))`,
+    args: [chatId, username || null, firstName || null, lastName || null],
+  });
+}
+
+async function getBotUsers() {
+  const result = await db.execute(
+    'SELECT * FROM bot_users ORDER BY first_name, last_name'
+  );
+  return result.rows;
+}
+
 async function searchCustomers(query) {
   if (!query || query.trim().length < 1) return [];
   const result = await db.execute({
@@ -281,6 +306,8 @@ async function searchCustomers(query) {
 
 module.exports = {
   initDb,
+  saveBotUser,
+  getBotUsers,
   getMenuItems,
   addMenuItem,
   updateMenuItem,

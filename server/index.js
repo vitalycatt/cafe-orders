@@ -113,6 +113,28 @@ io.on('connection', (socket) => {
     }
   });
 
+  // --- Bot users & receipt sending ---
+  socket.on('bot:users', async (callback) => {
+    try {
+      const users = await db.getBotUsers();
+      if (typeof callback === 'function') callback(users);
+    } catch {
+      if (typeof callback === 'function') callback([]);
+    }
+  });
+
+  socket.on('receipt:send', async (data, callback) => {
+    try {
+      const { chatId, image } = data;
+      const buffer = Buffer.isBuffer(image) ? image : Buffer.from(image);
+      const date = new Date().toLocaleDateString('ru-RU');
+      await botModule.sendPhoto(chatId, buffer, `Чек смены ${date}`);
+      if (typeof callback === 'function') callback({ ok: true });
+    } catch (err) {
+      if (typeof callback === 'function') callback({ ok: false, error: err.message });
+    }
+  });
+
   // --- Customers autocomplete ---
   socket.on('customers:search', async (query, callback) => {
     try {
@@ -132,6 +154,8 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(clientDist, 'index.html'));
 });
 
+let botModule = { sendPhoto: async () => { throw new Error('Bot not loaded yet'); } };
+
 const PORT = process.env.PORT || 3000;
 
 db.initDb()
@@ -139,7 +163,7 @@ db.initDb()
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
-    require('./bot');
+    botModule = require('./bot');
   })
   .catch((err) => {
     console.error('Failed to initialize database:', err);
