@@ -66,14 +66,17 @@ async function initDb() {
   // dropping order_items BEFORE orders — once the child is gone, DROP TABLE orders
   // succeeds under any FK mode. Data is preserved via backup tables in the same batch.
   try {
-    // PRAGMA table_info(...) returns a result shape that the libsql HTTP row mapper
-    // can't process (throws "Cannot convert undefined or null to object"). The
-    // pragma_table_info('orders') table-valued function returns the same data via a
-    // regular SELECT, which the client handles cleanly.
-    const info = await db.execute(
-      "SELECT name FROM pragma_table_info('orders') WHERE name = 'menu_item_id'",
-    );
-    const hasMenuItemId = info.rows.length > 0;
+    // Detect legacy column via a probe SELECT. Neither PRAGMA table_info nor
+    // pragma_table_info() round-trip cleanly on Turso HTTP, so we try to read the
+    // column directly — SQLite raises "no such column" if it's already gone.
+    let hasMenuItemId = false;
+    try {
+      await db.execute("SELECT menu_item_id FROM orders LIMIT 0");
+      hasMenuItemId = true;
+    } catch {
+      hasMenuItemId = false;
+    }
+    console.log("Orders migration check: hasMenuItemId =", hasMenuItemId);
 
     if (hasMenuItemId) {
       console.log("Running orders migration: dropping legacy menu_item_id column");
