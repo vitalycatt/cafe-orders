@@ -60,43 +60,74 @@ async function initDb() {
     )
   `);
 
-  // Migration: if orders still has legacy menu_item_id column, move to order_items.
-  // PRAGMA foreign_keys can't be toggled inside a transaction, and on Turso HTTP it
-  // doesn't persist across separate db.execute() calls. defer_foreign_keys does work
-  // inside a transaction and is reset at commit — exactly what we need to rebuild the
-  // orders table while order_items references it.
-  const info = await db.execute("PRAGMA table_info(orders)");
-  const hasMenuItemId = info.rows.some((col) => col.name === "menu_item_id");
+  // Migration: if orders still has legacy menu_item_id column, rebuild both tables.
+  // PRAGMA foreign_keys / defer_foreign_keys don't reliably take effect on Turso HTTP
+  // (separate connections, transaction restrictions). So we sidestep FK entirely by
+  // dropping order_items BEFORE orders — once the child is gone, DROP TABLE orders
+  // succeeds under any FK mode. Data is preserved via backup tables in the same batch.
+  try {
+    const info = await db.execute("PRAGMA table_info(orders)");
+    const hasMenuItemId = info.rows.some((col) => col.name === "menu_item_id");
 
-  if (hasMenuItemId) {
-    console.log("Running orders migration: dropping legacy menu_item_id column");
-    await db.batch(
-      [
-        { sql: "PRAGMA defer_foreign_keys = ON" },
-        {
-          sql: `INSERT INTO order_items (order_id, menu_item_id, quantity)
-                SELECT id, menu_item_id, 1 FROM orders WHERE menu_item_id IS NOT NULL`,
-        },
-        {
-          sql: `CREATE TABLE orders_new (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            customer_name TEXT NOT NULL,
-            notes TEXT,
-            status TEXT DEFAULT 'pending',
-            created_at TEXT DEFAULT (datetime('now')),
-            shift_date TEXT DEFAULT (date('now'))
-          )`,
-        },
-        {
-          sql: `INSERT INTO orders_new (id, customer_name, notes, status, created_at, shift_date)
-                SELECT id, customer_name, notes, status, created_at, shift_date FROM orders`,
-        },
-        { sql: "DROP TABLE orders" },
-        { sql: "ALTER TABLE orders_new RENAME TO orders" },
-      ],
-      "write",
-    );
-    console.log("Orders migration completed");
+    if (hasMenuItemId) {
+      console.log("Running orders migration: dropping legacy menu_item_id column");
+      await db.batch(
+        [
+          {
+            sql: `CREATE TABLE orders_backup AS
+                  SELECT id, customer_name, notes, status, created_at, shift_date FROM orders`,
+          },
+          {
+            sql: `CREATE TABLE order_items_backup AS
+                  SELECT order_id, menu_item_id, quantity FROM order_items`,
+          },
+          {
+            sql: `INSERT INTO order_items_backup (order_id, menu_item_id, quantity)
+                  SELECT id, menu_item_id, 1 FROM orders
+                  WHERE menu_item_id IS NOT NULL
+                  AND id NOT IN (SELECT order_id FROM order_items_backup)`,
+          },
+          { sql: "DROP TABLE order_items" },
+          { sql: "DROP TABLE orders" },
+          {
+            sql: `CREATE TABLE orders (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              customer_name TEXT NOT NULL,
+              notes TEXT,
+              status TEXT DEFAULT 'pending',
+              created_at TEXT DEFAULT (datetime('now')),
+              shift_date TEXT DEFAULT (date('now'))
+            )`,
+          },
+          {
+            sql: `INSERT INTO orders (id, customer_name, notes, status, created_at, shift_date)
+                  SELECT id, customer_name, notes, status, created_at, shift_date FROM orders_backup`,
+          },
+          {
+            sql: `CREATE TABLE order_items (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              order_id INTEGER NOT NULL,
+              menu_item_id INTEGER NOT NULL,
+              quantity INTEGER NOT NULL DEFAULT 1,
+              FOREIGN KEY (order_id) REFERENCES orders(id),
+              FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
+            )`,
+          },
+          {
+            sql: `INSERT INTO order_items (order_id, menu_item_id, quantity)
+                  SELECT order_id, menu_item_id, quantity FROM order_items_backup`,
+          },
+          { sql: "DROP TABLE orders_backup" },
+          { sql: "DROP TABLE order_items_backup" },
+        ],
+        "write",
+      );
+      console.log("Orders migration completed");
+    }
+  } catch (err) {
+    console.error("Orders migration FAILED:", err);
+    // Don't crash the server — other endpoints (menu, customers) still need to work.
+    // Order creation will keep failing until this is fixed; logs above show why.
   }
 }
 
