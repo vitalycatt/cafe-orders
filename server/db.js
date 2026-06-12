@@ -66,8 +66,14 @@ async function initDb() {
   // dropping order_items BEFORE orders — once the child is gone, DROP TABLE orders
   // succeeds under any FK mode. Data is preserved via backup tables in the same batch.
   try {
-    const info = await db.execute("PRAGMA table_info(orders)");
-    const hasMenuItemId = info.rows.some((col) => col.name === "menu_item_id");
+    // PRAGMA table_info(...) returns a result shape that the libsql HTTP row mapper
+    // can't process (throws "Cannot convert undefined or null to object"). The
+    // pragma_table_info('orders') table-valued function returns the same data via a
+    // regular SELECT, which the client handles cleanly.
+    const info = await db.execute(
+      "SELECT name FROM pragma_table_info('orders') WHERE name = 'menu_item_id'",
+    );
+    const hasMenuItemId = info.rows.length > 0;
 
     if (hasMenuItemId) {
       console.log("Running orders migration: dropping legacy menu_item_id column");
