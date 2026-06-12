@@ -60,46 +60,43 @@ async function initDb() {
     )
   `);
 
-  // Migration: if orders still has legacy menu_item_id column, move to order_items
-  try {
-    const info = await db.execute("PRAGMA table_info(orders)");
-    const hasMenuItemId = info.rows.some((col) => col.name === "menu_item_id");
+  // Migration: if orders still has legacy menu_item_id column, move to order_items.
+  // PRAGMA foreign_keys can't be toggled inside a transaction, and on Turso HTTP it
+  // doesn't persist across separate db.execute() calls. defer_foreign_keys does work
+  // inside a transaction and is reset at commit — exactly what we need to rebuild the
+  // orders table while order_items references it.
+  const info = await db.execute("PRAGMA table_info(orders)");
+  const hasMenuItemId = info.rows.some((col) => col.name === "menu_item_id");
 
-    if (hasMenuItemId) {
-      // Disable FK so we can drop the orders table while order_items references it
-      await db.execute("PRAGMA foreign_keys = OFF");
-      try {
-        await db.batch(
-          [
-            {
-              sql: `INSERT INTO order_items (order_id, menu_item_id, quantity)
-                    SELECT id, menu_item_id, 1 FROM orders WHERE menu_item_id IS NOT NULL`,
-            },
-            {
-              sql: `CREATE TABLE orders_new (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                customer_name TEXT NOT NULL,
-                notes TEXT,
-                status TEXT DEFAULT 'pending',
-                created_at TEXT DEFAULT (datetime('now')),
-                shift_date TEXT DEFAULT (date('now'))
-              )`,
-            },
-            {
-              sql: `INSERT INTO orders_new (id, customer_name, notes, status, created_at, shift_date)
-                    SELECT id, customer_name, notes, status, created_at, shift_date FROM orders`,
-            },
-            { sql: "DROP TABLE orders" },
-            { sql: "ALTER TABLE orders_new RENAME TO orders" },
-          ],
-          "write",
-        );
-      } finally {
-        await db.execute("PRAGMA foreign_keys = ON");
-      }
-    }
-  } catch (err) {
-    console.error("Orders migration error:", err);
+  if (hasMenuItemId) {
+    console.log("Running orders migration: dropping legacy menu_item_id column");
+    await db.batch(
+      [
+        { sql: "PRAGMA defer_foreign_keys = ON" },
+        {
+          sql: `INSERT INTO order_items (order_id, menu_item_id, quantity)
+                SELECT id, menu_item_id, 1 FROM orders WHERE menu_item_id IS NOT NULL`,
+        },
+        {
+          sql: `CREATE TABLE orders_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_name TEXT NOT NULL,
+            notes TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT (datetime('now')),
+            shift_date TEXT DEFAULT (date('now'))
+          )`,
+        },
+        {
+          sql: `INSERT INTO orders_new (id, customer_name, notes, status, created_at, shift_date)
+                SELECT id, customer_name, notes, status, created_at, shift_date FROM orders`,
+        },
+        { sql: "DROP TABLE orders" },
+        { sql: "ALTER TABLE orders_new RENAME TO orders" },
+      ],
+      "write",
+    );
+    console.log("Orders migration completed");
   }
 }
 
