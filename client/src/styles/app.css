@@ -587,16 +587,7 @@ input::placeholder { color: var(--muted); }
 }
 
 /* ===== SHIFT REPORT ===== */
-.shift-report { display: flex; flex-direction: column; gap: 16px; }
-
-.report-summary h2 {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
+.shift-report { display: flex; flex-direction: column; gap: 12px; }
 
 .report-stats { display: flex; gap: 10px; }
 
@@ -621,20 +612,38 @@ input::placeholder { color: var(--muted); }
 .stat-value { display: block; font-size: 22px; font-weight: 800; color: var(--text); }
 .stat-label { display: block; font-size: 12px; margin-top: 2px; color: var(--muted); }
 
-.report-drinks, .report-orders { overflow-x: auto; }
-
-.report-drinks h3, .report-orders h3 {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  margin-bottom: 10px;
+.report-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid var(--border);
+  overflow: hidden;
 }
 
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-th { font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.report-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+}
+
+.report-row:last-child { border-bottom: none; }
+
+.report-row-name { flex: 1; font-weight: 500; color: var(--text); }
+.report-row-meta { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+.report-row-value { font-weight: 700; color: var(--primary); flex-shrink: 0; }
 
 /* ===== RECEIPT ===== */
 .receipt-overlay {
