@@ -168,6 +168,8 @@ db.initDb()
       console.log(`Server running on port ${PORT}`);
     });
     botModule = require('./bot');
+    const { startScheduler } = require('./scheduler');
+    startScheduler(botModule);
   })
   .catch((err) => {
     console.error('Failed to initialize database:', err);

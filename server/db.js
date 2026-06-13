@@ -60,6 +60,13 @@ async function initDb() {
     )
   `);
 
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS shift_reports_sent (
+      shift_date TEXT PRIMARY KEY,
+      sent_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
   // Migration: if orders still has legacy menu_item_id column, rebuild both tables.
   // PRAGMA foreign_keys / defer_foreign_keys don't reliably take effect on Turso HTTP
   // (separate connections, transaction restrictions). So we sidestep FK entirely by
@@ -362,6 +369,21 @@ async function searchCustomers(query) {
   return result.rows.map((r) => r.customer_name);
 }
 
+async function wasShiftReportSent(shiftDate) {
+  const result = await db.execute({
+    sql: "SELECT 1 FROM shift_reports_sent WHERE shift_date = ?",
+    args: [shiftDate],
+  });
+  return result.rows.length > 0;
+}
+
+async function markShiftReportSent(shiftDate) {
+  await db.execute({
+    sql: "INSERT OR IGNORE INTO shift_reports_sent (shift_date) VALUES (?)",
+    args: [shiftDate],
+  });
+}
+
 module.exports = {
   initDb,
   saveBotUser,
@@ -377,4 +399,6 @@ module.exports = {
   updateOrderStatus,
   getShiftReport,
   searchCustomers,
+  wasShiftReportSent,
+  markShiftReportSent,
 };
