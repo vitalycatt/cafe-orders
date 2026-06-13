@@ -56,9 +56,10 @@ module.exports = {
       caption: caption || undefined,
     });
   },
-  sendDocument: async (chatId, buffer, filename, caption) => {
+  sendDocument: async (chatId, buffer, filename, caption, options = {}) => {
     await bot.api.sendDocument(Number(chatId), new InputFile(buffer, filename || 'receipt.png'), {
       caption: caption || undefined,
+      ...options,
     });
   },
   sendMessage: async (chatId, text, options = {}) => {
