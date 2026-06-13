@@ -6,18 +6,38 @@ const SEPARATOR = '--------------------------------';
 export default function ReceiptPreview({ report, onClose }) {
   const receiptRef = useRef(null);
 
-  const handleDownload = async () => {
-    if (!receiptRef.current) return;
-    const canvas = await html2canvas(receiptRef.current, { backgroundColor: '#ffffff', scale: 2 });
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `receipt-${report.date}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
+  const renderBlob = async () =>
+    new Promise(async (resolve) => {
+      const canvas = await html2canvas(receiptRef.current, { backgroundColor: '#ffffff', scale: 2 });
+      canvas.toBlob(resolve, 'image/png');
     });
+
+  const downloadBlob = (blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt-${report.date}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShare = async () => {
+    if (!receiptRef.current) return;
+    const blob = await renderBlob();
+    if (!blob) return;
+
+    const file = new File([blob], `receipt-${report.date}.png`, { type: 'image/png' });
+    const shareData = { files: [file], title: `Чек смены ${report.date}` };
+
+    if (navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    downloadBlob(blob);
   };
 
   return (
@@ -71,7 +91,7 @@ export default function ReceiptPreview({ report, onClose }) {
         </div>
 
         <div className="receipt-actions receipt-actions--row">
-          <button className="btn btn-primary" onClick={handleDownload}>Скачать PNG</button>
+          <button className="btn btn-primary" onClick={handleShare}>Поделиться</button>
           <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
         </div>
 
