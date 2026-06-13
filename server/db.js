@@ -60,10 +60,25 @@ async function initDb() {
     )
   `);
 
+  // shift_reports_sent gained a "slot" column to track multiple sends per day
+  // (midday + evening). Old single-column schema is wiped — the data is just a
+  // sent-tracking log, no business impact.
+  let hasSlotColumn = false;
+  try {
+    await db.execute("SELECT slot FROM shift_reports_sent LIMIT 0");
+    hasSlotColumn = true;
+  } catch {
+    hasSlotColumn = false;
+  }
+  if (!hasSlotColumn) {
+    await db.execute("DROP TABLE IF EXISTS shift_reports_sent");
+  }
   await db.execute(`
     CREATE TABLE IF NOT EXISTS shift_reports_sent (
-      shift_date TEXT PRIMARY KEY,
-      sent_at TEXT DEFAULT (datetime('now'))
+      shift_date TEXT NOT NULL,
+      slot TEXT NOT NULL,
+      sent_at TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (shift_date, slot)
     )
   `);
 
@@ -369,18 +384,18 @@ async function searchCustomers(query) {
   return result.rows.map((r) => r.customer_name);
 }
 
-async function wasShiftReportSent(shiftDate) {
+async function wasShiftReportSent(shiftDate, slot) {
   const result = await db.execute({
-    sql: "SELECT 1 FROM shift_reports_sent WHERE shift_date = ?",
-    args: [shiftDate],
+    sql: "SELECT 1 FROM shift_reports_sent WHERE shift_date = ? AND slot = ?",
+    args: [shiftDate, slot],
   });
   return result.rows.length > 0;
 }
 
-async function markShiftReportSent(shiftDate) {
+async function markShiftReportSent(shiftDate, slot) {
   await db.execute({
-    sql: "INSERT OR IGNORE INTO shift_reports_sent (shift_date) VALUES (?)",
-    args: [shiftDate],
+    sql: "INSERT OR IGNORE INTO shift_reports_sent (shift_date, slot) VALUES (?, ?)",
+    args: [shiftDate, slot],
   });
 }
 

@@ -1,24 +1,34 @@
 const db = require('./db');
 
 const MSK_OFFSET_HOURS = 3;
-const FIRE_HOUR_MSK = 23;
-const FIRE_MIN_MSK = 55;
-const FIRE_HOUR_UTC = FIRE_HOUR_MSK - MSK_OFFSET_HOURS;
 
-function getNextRunMs(now = new Date()) {
-  const next = new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    FIRE_HOUR_UTC,
-    FIRE_MIN_MSK,
-    0,
-    0,
-  ));
-  if (next.getTime() <= now.getTime()) {
-    next.setUTCDate(next.getUTCDate() + 1);
+const SLOTS = [
+  { name: 'midday', hourMsk: 12, minMsk: 40 },
+  { name: 'evening', hourMsk: 23, minMsk: 55 },
+];
+
+function getNextRun(now = new Date()) {
+  let best = null;
+  for (const slot of SLOTS) {
+    // Date.UTC handles negative hour values by rolling back the day,
+    // so any MSK hour < 3 still resolves correctly.
+    const candidate = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      slot.hourMsk - MSK_OFFSET_HOURS,
+      slot.minMsk,
+      0,
+      0,
+    ));
+    if (candidate.getTime() <= now.getTime()) {
+      candidate.setUTCDate(candidate.getUTCDate() + 1);
+    }
+    if (!best || candidate.getTime() < best.fireAt.getTime()) {
+      best = { fireAt: candidate, slot };
+    }
   }
-  return next.getTime() - now.getTime();
+  return best;
 }
 
 function getMoscowDateStr(now = new Date()) {
@@ -83,21 +93,21 @@ function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-async function sendEndOfDayReport(bot) {
+async function sendShiftReport(bot, slotName) {
   const chatId = process.env.CAFE_CHAT_ID;
   if (!chatId) return;
   if (!bot.enabled) return;
 
   const shiftDate = getMoscowDateStr();
 
-  if (await db.wasShiftReportSent(shiftDate)) {
-    console.log(`Shift report for ${shiftDate} already sent — skipping`);
+  if (await db.wasShiftReportSent(shiftDate, slotName)) {
+    console.log(`Shift report ${shiftDate}/${slotName} already sent — skipping`);
     return;
   }
 
   const report = await db.getShiftReport(shiftDate);
   if (report.totalOrders === 0) {
-    console.log(`No orders on ${shiftDate} — skipping auto-send`);
+    console.log(`No orders on ${shiftDate} — skipping ${slotName} auto-send`);
     return;
   }
 
@@ -106,34 +116,37 @@ async function sendEndOfDayReport(bot) {
     parse_mode: 'HTML',
     disable_notification: true,
   });
-  await db.markShiftReportSent(shiftDate);
-  console.log(`Shift report for ${shiftDate} sent to cafe chat`);
+  await db.markShiftReportSent(shiftDate, slotName);
+  console.log(`Shift report ${shiftDate}/${slotName} sent to cafe chat`);
 }
 
 function startScheduler(bot) {
   if (!process.env.CAFE_CHAT_ID) {
-    console.warn('CAFE_CHAT_ID not set — end-of-day auto-send disabled.');
+    console.warn('CAFE_CHAT_ID not set — shift report auto-send disabled.');
     return;
   }
   if (!bot.enabled) {
-    console.warn('Bot disabled — end-of-day auto-send disabled.');
+    console.warn('Bot disabled — shift report auto-send disabled.');
     return;
   }
 
-  const schedule = () => {
-    const ms = getNextRunMs();
-    console.log(`Next end-of-day report scheduled in ${Math.round(ms / 60000)} min`);
+  const tick = () => {
+    const { fireAt, slot } = getNextRun();
+    const ms = fireAt.getTime() - Date.now();
+    console.log(
+      `Next shift report (slot=${slot.name}) scheduled in ${Math.round(ms / 60000)} min`,
+    );
     setTimeout(async () => {
       try {
-        await sendEndOfDayReport(bot);
+        await sendShiftReport(bot, slot.name);
       } catch (err) {
-        console.error('End-of-day report failed:', err);
+        console.error(`Shift report (slot=${slot.name}) failed:`, err);
       }
-      schedule();
+      tick();
     }, ms);
   };
 
-  schedule();
+  tick();
 }
 
 module.exports = { startScheduler };
