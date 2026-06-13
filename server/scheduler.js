@@ -32,6 +32,7 @@ function formatReceiptText(report) {
     (sum, order) => sum + (order.items || []).reduce((s, i) => s + i.quantity, 0),
     0,
   );
+  const sortedSummary = [...report.summary].sort((a, b) => b.count - a.count);
   const customers = Object.entries(
     report.orders.reduce((acc, order) => {
       const name = order.customer_name || '—';
@@ -47,15 +48,24 @@ function formatReceiptText(report) {
   lines.push(SEP);
   lines.push(`Смена: ${report.date}`);
   lines.push(SEP);
-  lines.push(padRow('ИТОГО', `${report.totalRevenue} P`));
+  lines.push('ИТОГИ');
   lines.push(padRow('Заказов', String(report.totalOrders)));
   lines.push(padRow('Позиций', String(totalItems)));
+  lines.push(padRow('ИТОГО', String(report.totalRevenue)));
   lines.push(SEP);
+
+  if (sortedSummary.length > 0) {
+    lines.push('ПОЗИЦИИ');
+    for (const item of sortedSummary) {
+      lines.push(padRow(item.name, String(item.count)));
+    }
+    lines.push(SEP);
+  }
 
   if (customers.length > 0) {
     lines.push('КЛИЕНТЫ');
     for (const c of customers) {
-      lines.push(padRow(c.name, `${c.total} P`));
+      lines.push(padRow(c.name, String(c.total)));
     }
     lines.push(SEP);
   }

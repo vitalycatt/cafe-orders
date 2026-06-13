@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
+import Coin from './Coin';
 
 const SEPARATOR = '--------------------------------';
 
@@ -26,6 +27,8 @@ export default function ReceiptPreview({ report, socket, onClose }) {
     (sum, order) => sum + (order.items || []).reduce((s, i) => s + i.quantity, 0),
     0,
   );
+
+  const sortedSummary = [...report.summary].sort((a, b) => b.count - a.count);
 
   const customers = Object.entries(
     report.orders.reduce((acc, order) => {
@@ -81,16 +84,30 @@ export default function ReceiptPreview({ report, socket, onClose }) {
           <div className="receipt-date">Смена: {report.date}</div>
           <div className="receipt-line">{SEPARATOR}</div>
 
-          <div className="receipt-row receipt-total">
-            <span>ИТОГО</span><span>{report.totalRevenue} P</span>
-          </div>
+          <div className="receipt-section-title">ИТОГИ</div>
           <div className="receipt-row">
             <span>Заказов</span><span>{report.totalOrders}</span>
           </div>
           <div className="receipt-row">
             <span>Позиций</span><span>{totalItems}</span>
           </div>
+          <div className="receipt-row receipt-total">
+            <span>ИТОГО</span><span>{report.totalRevenue}<Coin /></span>
+          </div>
           <div className="receipt-line">{SEPARATOR}</div>
+
+          {sortedSummary.length > 0 && (
+            <>
+              <div className="receipt-section-title">ПОЗИЦИИ</div>
+              {sortedSummary.map((item) => (
+                <div key={item.name} className="receipt-row">
+                  <span>{item.name}</span>
+                  <span>{item.count}</span>
+                </div>
+              ))}
+              <div className="receipt-line">{SEPARATOR}</div>
+            </>
+          )}
 
           {customers.length > 0 && (
             <>
@@ -98,7 +115,7 @@ export default function ReceiptPreview({ report, socket, onClose }) {
               {customers.map((c) => (
                 <div key={c.name} className="receipt-row">
                   <span>{c.name}</span>
-                  <span>{c.total} P</span>
+                  <span>{c.total}<Coin /></span>
                 </div>
               ))}
               <div className="receipt-line">{SEPARATOR}</div>
