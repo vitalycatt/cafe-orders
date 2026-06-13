@@ -13,6 +13,13 @@ export default function useSocket() {
 
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
+    socket.on('error', (err) => {
+      const message = err?.message || JSON.stringify(err);
+      alert('Ошибка сервера:\n' + message);
+    });
+    socket.on('connect_error', (err) => {
+      alert('Не удалось подключиться:\n' + (err?.message || String(err)));
+    });
 
     return () => {
       socket.disconnect();

@@ -13,6 +13,17 @@ if (tg) {
   }
 }
 
+window.addEventListener('error', (e) => {
+  const msg = e.error?.stack || e.message || 'Unknown error';
+  alert('JS Error:\n' + msg);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  const reason = e.reason;
+  const msg = reason?.stack || reason?.message || JSON.stringify(reason);
+  alert('Unhandled rejection:\n' + msg);
+});
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
