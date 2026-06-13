@@ -22,6 +22,21 @@ export default function ReceiptPreview({ report, socket, onClose }) {
     URL.revokeObjectURL(url);
   };
 
+  const totalItems = report.orders.reduce(
+    (sum, order) => sum + (order.items || []).reduce((s, i) => s + i.quantity, 0),
+    0,
+  );
+
+  const customers = Object.entries(
+    report.orders.reduce((acc, order) => {
+      const name = order.customer_name || '—';
+      acc[name] = (acc[name] || 0) + (order.total || 0);
+      return acc;
+    }, {}),
+  )
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total);
+
   const handleShare = async () => {
     if (!receiptRef.current || sending) return;
     const blob = await renderBlob();
@@ -65,34 +80,7 @@ export default function ReceiptPreview({ report, socket, onClose }) {
           <div className="receipt-line">{SEPARATOR}</div>
           <div className="receipt-date">Смена: {report.date}</div>
           <div className="receipt-line">{SEPARATOR}</div>
-          {report.orders.length > 0 && (
-            <>
-              <div className="receipt-section-title">ЗАКАЗЫ</div>
-              {report.orders.map((order) => (
-                <div key={order.id}>
-                  {(order.items || []).map((item, idx) => (
-                    <div key={idx} className="receipt-row">
-                      <span>{item.name}{item.quantity > 1 ? ` x${item.quantity}` : ''}</span>
-                      <span>{item.price * item.quantity} P</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-              <div className="receipt-line">{SEPARATOR}</div>
-            </>
-          )}
-          {report.summary.length > 0 && (
-            <>
-              <div className="receipt-section-title">СВОДКА</div>
-              {report.summary.map((item) => (
-                <div key={item.name} className="receipt-row">
-                  <span>{item.name} x{item.count}</span>
-                  <span>{item.revenue} P</span>
-                </div>
-              ))}
-              <div className="receipt-line">{SEPARATOR}</div>
-            </>
-          )}
+
           <div className="receipt-row receipt-total">
             <span>ИТОГО</span><span>{report.totalRevenue} P</span>
           </div>
@@ -100,9 +88,23 @@ export default function ReceiptPreview({ report, socket, onClose }) {
             <span>Заказов</span><span>{report.totalOrders}</span>
           </div>
           <div className="receipt-row">
-            <span>Выполнено</span><span>{report.completedOrders}</span>
+            <span>Позиций</span><span>{totalItems}</span>
           </div>
           <div className="receipt-line">{SEPARATOR}</div>
+
+          {customers.length > 0 && (
+            <>
+              <div className="receipt-section-title">КЛИЕНТЫ</div>
+              {customers.map((c) => (
+                <div key={c.name} className="receipt-row">
+                  <span>{c.name}</span>
+                  <span>{c.total} P</span>
+                </div>
+              ))}
+              <div className="receipt-line">{SEPARATOR}</div>
+            </>
+          )}
+
           <div className="receipt-footer">СПАСИБО!</div>
         </div>
 

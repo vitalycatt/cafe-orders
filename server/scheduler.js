@@ -28,28 +28,39 @@ function getMoscowDateStr(now = new Date()) {
 
 function formatReceiptText(report) {
   const SEP = '--------------------------------';
+  const totalItems = report.orders.reduce(
+    (sum, order) => sum + (order.items || []).reduce((s, i) => s + i.quantity, 0),
+    0,
+  );
+  const customers = Object.entries(
+    report.orders.reduce((acc, order) => {
+      const name = order.customer_name || '—';
+      acc[name] = (acc[name] || 0) + (order.total || 0);
+      return acc;
+    }, {}),
+  )
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total);
+
   const lines = [];
   lines.push('        КАФЕ');
   lines.push(SEP);
   lines.push(`Смена: ${report.date}`);
   lines.push(SEP);
+  lines.push(padRow('ИТОГО', `${report.totalRevenue} P`));
+  lines.push(padRow('Заказов', String(report.totalOrders)));
+  lines.push(padRow('Позиций', String(totalItems)));
+  lines.push(SEP);
 
-  if (report.summary.length > 0) {
-    lines.push('СВОДКА');
-    for (const item of report.summary) {
-      const left = `${item.name} x${item.count}`;
-      const right = `${item.revenue} P`;
-      lines.push(padRow(left, right));
+  if (customers.length > 0) {
+    lines.push('КЛИЕНТЫ');
+    for (const c of customers) {
+      lines.push(padRow(c.name, `${c.total} P`));
     }
     lines.push(SEP);
   }
 
-  lines.push(padRow('ИТОГО', `${report.totalRevenue} P`));
-  lines.push(padRow('Заказов', String(report.totalOrders)));
-  lines.push(padRow('Выполнено', String(report.completedOrders)));
-  lines.push(SEP);
   lines.push('      СПАСИБО!');
-
   return lines.join('\n');
 }
 
