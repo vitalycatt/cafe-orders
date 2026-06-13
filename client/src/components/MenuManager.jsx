@@ -66,31 +66,12 @@ export default function MenuManager({ socket, menuItems }) {
                   <p className="menu-empty">Нет позиций</p>
                 )}
                 {items.map((item) => (
-                  <div
+                  <MenuItemRow
                     key={item.id}
-                    className="menu-item menu-item--clickable"
-                    onClick={() => setEditingItem(item)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setEditingItem(item);
-                      }
-                    }}
-                  >
-                    <span className="menu-item-name">{item.name}</span>
-                    <span className="menu-item-price">{item.price}<Coin /></span>
-                    <button
-                      className="btn btn-sm btn-danger-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(item.id);
-                      }}
-                    >
-                      Удал.
-                    </button>
-                  </div>
+                    item={item}
+                    onEdit={setEditingItem}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </div>
             </div>
@@ -105,6 +86,49 @@ export default function MenuManager({ socket, menuItems }) {
           onClose={() => setEditingItem(null)}
         />
       )}
+    </div>
+  );
+}
+
+function MenuItemRow({ item, onEdit, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const t = setTimeout(() => setConfirmDelete(false), 3000);
+    return () => clearTimeout(t);
+  }, [confirmDelete]);
+
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    if (confirmDelete) {
+      onDelete(item.id);
+    } else {
+      setConfirmDelete(true);
+    }
+  };
+
+  return (
+    <div
+      className="menu-item menu-item--clickable"
+      onClick={() => onEdit(item)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onEdit(item);
+        }
+      }}
+    >
+      <span className="menu-item-name">{item.name}</span>
+      <span className="menu-item-price">{item.price}<Coin /></span>
+      <button
+        className={`btn btn-sm btn-danger-sm ${confirmDelete ? 'confirm' : ''}`}
+        onClick={handleDeleteClick}
+      >
+        {confirmDelete ? 'Точно?' : 'Удал.'}
+      </button>
     </div>
   );
 }

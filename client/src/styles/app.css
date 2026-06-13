@@ -455,6 +455,12 @@ input::placeholder { color: var(--muted); }
   cursor: pointer;
 }
 
+.menu-item .btn-danger-sm.confirm {
+  background: var(--danger);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(201, 64, 64, 0.3);
+}
+
 /* Add form */
 .menu-add-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .menu-add-row  { display: flex; gap: 8px; }
