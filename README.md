@@ -1,132 +1,186 @@
 # Cafe Orders
 
-Веб-приложение для управления заказами в кафе. Используется во время рабочей смены: кассир принимает заказы, бариста их выполняет, в конце смены формируется отчёт с чеком.
+Веб-приложение для управления заказами в кафе во время рабочей смены: кассир принимает заказы, бариста меняет их статусы в реальном времени, по окончании смены формируется отчёт с чеком (PNG). Чек автоматически отправляется в Telegram-чат кафе каждый вечер.
+
+## Возможности
+
+- Две роли с раздельными интерфейсами: **Кассир** (синяя тема) и **Бариста** (зелёная)
+- Реал-тайм синхронизация заказов и меню между всеми устройствами через Socket.io
+- Очереди баристы: **Новые / Готовится / Готово** — статус меняется одним тапом
+- Управление меню с категориями (основное меню / сезонные напитки / десерты)
+- Автокомплит имени клиента по истории заказов
+- Отчёт за смену: количество заказов, позиций, выручка, топ-позиции, список клиентов
+- Серверная генерация чека в PNG (`@napi-rs/canvas`) с иконкой монеты
+- Автоотправка чека смены в Telegram-чат кафе в 23:55 МСК (защита от двойной отправки)
+- Telegram Mini App с fullscreen и учётом safe-area
+- Устойчивость к разрывам соединения: Socket.io переподключается, данные перезагружаются автоматически
+- Подтверждённая отправка заказа (callback от сервера) — исключает потерю и дублирование
 
 ## Стек
 
 | Слой | Технология |
 |---|---|
-| Бэкенд | Node.js, Express, Socket.io |
-| Фронтенд | React 18, Vite, React Router |
-| База данных | [Turso](https://turso.tech) (облачный SQLite / libsql) |
+| Бэкенд | Node.js 20, Express 4, Socket.io 4 |
+| Фронтенд | React 18, Vite 6, React Router 6 |
+| База данных | SQLite через [libsql](https://github.com/tursodatabase/libsql) — локальный файл или [Turso](https://turso.tech) |
 | Telegram-бот | [grammY](https://grammy.dev) |
-| Хостинг | [Render](https://render.com) |
+| Генерация чека | [@napi-rs/canvas](https://github.com/Brooooooklyn/canvas) (сервер), html2canvas (клиент) |
+| Контейнер / хостинг | Docker, [Fly.io](https://fly.io) (`fly.toml` в репо) |
 
 ## Структура проекта
 
 ```
 cafe-orders/
 ├── server/
-│   ├── index.js      # Express + Socket.io сервер
-│   ├── db.js         # Работа с базой данных (Turso, async)
-│   └── bot.js        # Telegram Mini App бот
+│   ├── index.js          # Express + Socket.io, обработчики событий
+│   ├── db.js             # libsql-клиент, схема, миграции, CRUD
+│   ├── bot.js            # Telegram-бот (grammY), отключается без BOT_TOKEN
+│   ├── scheduler.js      # Автоотправка отчёта в 23:55 МСК
+│   └── receiptImage.js   # Серверный рендер чека в PNG (@napi-rs/canvas)
 ├── client/
-│   └── src/
-│       ├── pages/
-│       │   ├── RoleSelectPage.jsx    # Выбор роли (синяя / зелёная тема)
-│       │   ├── CashierPage.jsx       # Интерфейс кассира
-│       │   ├── BaristaPage.jsx       # Интерфейс баристы
-│       │   └── ShiftReportPage.jsx   # Отчёт за смену
-│       ├── components/
-│       │   ├── Modal.jsx             # Центрированный диалог
-│       │   ├── OrderForm.jsx         # Форма нового заказа (с индикатором отправки)
-│       │   ├── OrderCard.jsx         # Карточка заказа
-│       │   ├── OrderList.jsx         # Список заказов
-│       │   ├── MenuManager.jsx       # Управление меню (открывается в модале)
-│       │   ├── ShiftReport.jsx       # Сводка смены
-│       │   └── ReceiptPreview.jsx    # Предпросмотр чека (скачать PNG)
-│       └── hooks/
-│           └── useSocket.js          # Хук для Socket.io
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   ├── constants.js              # CATEGORIES
+│   │   ├── pages/
+│   │   │   ├── RoleSelectPage.jsx    # Выбор роли, запоминает в localStorage
+│   │   │   ├── CashierPage.jsx       # Интерфейс кассира
+│   │   │   ├── BaristaPage.jsx       # Три очереди заказов
+│   │   │   └── ShiftReportPage.jsx   # Сводка смены + чек
+│   │   ├── components/
+│   │   │   ├── Modal.jsx             # Центрированный диалог
+│   │   │   ├── OrderForm.jsx         # Форма нового / редактируемого заказа
+│   │   │   ├── OrderCard.jsx         # Карточка заказа (бариста)
+│   │   │   ├── OrderList.jsx         # Список заказов (кассир)
+│   │   │   ├── MenuManager.jsx       # CRUD меню в модале
+│   │   │   ├── ShiftReport.jsx       # Сводка смены
+│   │   │   ├── ReceiptPreview.jsx    # Предпросмотр чека, скачивание / отправка в TG
+│   │   │   └── Coin.jsx              # SVG иконка монеты
+│   │   ├── hooks/
+│   │   │   └── useSocket.js          # Socket.io клиент + статус подключения
+│   │   └── styles/app.css
+│   ├── vite.config.js                # Прокси /socket.io → :3000
+│   └── package.json
 ├── Dockerfile
+├── fly.toml                          # Конфиг Fly.io (region ams, volume cafe_data)
 ├── package.json
-└── .env
+└── .env example
 ```
-
-## Роли
-
-**Кассир** — принимает заказы, управляет меню через модальное окно, открывает отчёт за смену. Синяя цветовая тема.
-
-**Бариста** — видит три очереди заказов (Новые / Готовится / Готово) с цветовой маркировкой, меняет статусы. Зелёная цветовая тема.
 
 ## Переменные окружения
 
-Создай файл `.env` в корне проекта:
+Создай файл `.env` в корне проекта (см. `.env example`):
 
 ```env
-# Turso — облачная база данных
-TURSO_DATABASE_URL=libsql://your-database.turso.io
-TURSO_AUTH_TOKEN=your-turso-auth-token
+# Telegram-бот (опционально — без токена бот выключен, всё остальное работает)
+BOT_TOKEN=
+CAFE_CHAT_ID=       # chat_id куда отправлять чек смены (узнать через /id в боте)
+APP_URL=            # URL приложения, ставится в кнопку Mini App
 
-# Telegram-бот (опционально)
-BOT_TOKEN=your-telegram-bot-token
-APP_URL=https://your-app.onrender.com
-
-# Порт сервера (опционально, по умолчанию 3000)
+# Сервер
 PORT=3000
+NODE_ENV=development
+
+# База данных (опционально)
+# Если не задано — используется локальный файл cafe.db (или DATABASE_PATH)
+TURSO_DATABASE_URL=
+TURSO_AUTH_TOKEN=
+DATABASE_PATH=cafe.db
 ```
 
-Без `BOT_TOKEN` приложение работает в полном объёме — бот просто не запускается.
-
-Для локальной разработки без Turso можно не задавать `TURSO_DATABASE_URL` — тогда база будет храниться в файле `cafe.db` рядом с проектом.
+В `development` режиме бот **всегда выключен** (см. `server/bot.js`), даже если токен задан.
 
 ## Локальный запуск
 
 ```bash
-# 1. Установить зависимости
+# 1. Установить зависимости (корень + client)
 npm run install:all
 
-# 2. Создать .env (см. выше)
+# 2. Создать .env (можно с пустыми значениями для бота)
 
 # 3. Запустить сервер и клиент одновременно
 npm run dev
 ```
 
-Клиент откроется на `http://localhost:5173`, сервер — на `http://localhost:3000`.
+- Клиент: <http://localhost:5173> (Vite, прокси WebSocket → :3000)
+- Сервер: <http://localhost:3000>
+- БД: создаётся файл `cafe.db` в корне при первом запуске
 
-## Деплой на Render + Turso
+Запустить только сервер: `npm run server`. Только клиент: `npm run client`.
 
-### 1. Turso (база данных)
+## Деплой
 
-1. Зарегистрируйся на [turso.tech](https://turso.tech)
-2. Создай базу данных (регион: `fra` — Frankfurt)
-3. Скопируй **Database URL** и сгенерируй **Auth Token**
+### Fly.io (конфиг уже в репо)
 
-### 2. Render (хостинг)
+```bash
+fly launch --no-deploy   # один раз, чтобы создать app/volume
+fly secrets set BOT_TOKEN=... CAFE_CHAT_ID=... APP_URL=https://<app>.fly.dev
+fly deploy
+```
 
-1. Зарегистрируйся на [render.com](https://render.com)
-2. **New → Web Service → Connect a repository** → выбери `cafe-orders`
-3. Render найдёт `Dockerfile` и соберёт образ автоматически
-4. В разделе **Environment Variables** добавь:
-   - `TURSO_DATABASE_URL`
-   - `TURSO_AUTH_TOKEN`
-   - `BOT_TOKEN` (если используешь Telegram-бот)
-   - `APP_URL` (URL приложения на Render, нужен для кнопки в боте)
-5. Нажми **Deploy**
+`fly.toml` уже настроен: регион `ams`, volume `cafe_data` примонтирован в `/data`, `DATABASE_PATH=/data/cafe.db` — SQLite-файл переживает рестарты.
 
-После деплоя приложение доступно по адресу `https://your-app.onrender.com`.
+### Любой хостинг с Docker
 
-### Важно про бесплатный тариф Render
+```bash
+docker build -t cafe-orders .
+docker run -p 3000:3000 --env-file .env cafe-orders
+```
 
-На бесплатном тарифе сервис **засыпает** через 15 минут без запросов и просыпается при первом обращении (~30 секунд). Для воскресной смены достаточно открыть приложение за минуту до начала работы.
+Dockerfile собирает клиент (`vite build` → `client/dist`) и затем сервер раздаёт статику и API с одного порта.
+
+### Render / Railway / VPS
+
+Используй тот же `Dockerfile`. Для постоянного хранилища либо подключай volume и задай `DATABASE_PATH`, либо переходи на Turso (`TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`) — код выбирает источник автоматически.
 
 ## Telegram Mini App
 
-Бот поддерживает открытие приложения как Telegram Mini App через кнопку меню.
+- Команда `/start` сохраняет пользователя в `bot_users` и присылает кнопку «Открыть приложение» (web app по `APP_URL`)
+- Команда `/id` присылает `chat_id` текущего чата — используй её, чтобы получить `CAFE_CHAT_ID`
+- В клиенте автоматически вызывается `expand()` и `requestFullscreen()` (Telegram 8.0+). Для безусловного fullscreen — включи его в **@BotFather → Bot Settings → Menu Button → Allow Fullscreen**
+- Учёт safe-area: `env(safe-area-inset-top)` и `--tg-safe-area-inset-top`
 
-**Полноэкранный режим** — при запуске автоматически вызывается `expand()` (все версии Telegram) и `requestFullscreen()` (Telegram 8.0+). Чтобы fullscreen работал по умолчанию без запроса — включи его в настройках бота через **@BotFather → Bot Settings → Menu Button → Allow Fullscreen**.
+## Автоотправка чека смены
 
-**Safe area** — приложение учитывает отступы системного статус-бара на iOS и Android через `env(safe-area-inset-top)` и `--tg-safe-area-inset-top`.
+`server/scheduler.js` запускается при старте, если заданы `BOT_TOKEN` и `CAFE_CHAT_ID`.
+
+- Слот: **23:55 МСК** ежедневно
+- Если за день не было заказов — отправка пропускается
+- Защита от повтора: таблица `shift_reports_sent` (`shift_date + slot`)
+- Чек рендерится через `receiptImage.js` (PNG, монохромный, с иконкой монеты у сумм)
+
+## Архитектура: Socket.io события
+
+Все взаимодействия клиент↔сервер идут через сокеты (HTTP — только статика + `/socket.io`):
+
+| Событие | Направление | Назначение |
+|---|---|---|
+| `orders:load` / `orders:list` | C→S / S→C | Загрузить заказы текущей смены |
+| `order:create` | C→S (с callback) | Создать заказ; ответ `{ok}` для разблокировки кнопки |
+| `order:edit` / `order:delete` | C→S | Редактирование и удаление |
+| `order:update` | C→S | Сменить статус (бариста) |
+| `order:new` / `order:updated` / `order:deleted` | S→C (broadcast) | Изменения транслируются всем |
+| `menu:load` / `menu:list` / `menu:add` / `menu:update` / `menu:delete` / `menu:changed` | C↔S | CRUD меню |
+| `shift:report` / `shift:report_data` | C↔S | Получить отчёт за дату |
+| `customers:search` | C→S (с callback) | Автокомплит имён по истории |
+| `receipt:send` | C→S (с callback) | Отправить PNG чека в Telegram-чат |
+| `bot:users` | C→S (с callback) | Список зарегистрированных пользователей бота |
+
+## Схема БД
+
+- **`menu_items`** — `id, name, price, available, category` (`coffee` / `seasonal` / `dessert`). Удаление — мягкое (`available = 0`).
+- **`orders`** — `id, customer_name, notes, status, created_at, shift_date`. Статусы: `pending`, `in_progress`, `done`.
+- **`order_items`** — `id, order_id, menu_item_id, quantity` (заказ ↔ позиции).
+- **`bot_users`** — `chat_id, username, first_name, last_name, updated_at`.
+- **`shift_reports_sent`** — `shift_date, slot, sent_at` (защита от повторной автоотправки).
+
+`db.js` при старте идемпотентно создаёт таблицы и выполняет миграцию: если в `orders` остался legacy-столбец `menu_item_id`, данные переезжают в `order_items` через batch-операцию с обходом ограничений FK на Turso HTTP.
 
 ## Сценарий смены
 
-1. Открыть приложение, выбрать роль **Кассир**
+1. Открыть приложение, выбрать роль **Кассир** (роль сохранится в `localStorage`)
 2. Нажать **Меню** → добавить напитки и десерты в модальном окне
 3. Принимать заказы через форму (кнопка блокируется до подтверждения сервера)
-4. Бариста на своём устройстве выбирает роль **Бариста** и обновляет статусы заказов
-5. По окончании смены кассир открывает **Отчёт** → **Предпросмотр чека** → скачивает PNG
-
-## Устойчивость к нестабильному интернету
-
-- Socket.io автоматически переподключается при обрыве соединения
-- При восстановлении соединения список заказов и меню перезагружаются автоматически
-- Форма заказа ждёт подтверждения от сервера перед очисткой — исключает потерю и дублирование заказов
+4. Бариста на своём устройстве выбирает роль **Бариста**, обновляет статусы заказов в очередях
+5. По окончании смены кассир открывает **Отчёт** → **Чек** → скачивает PNG или отправляет в Telegram-чат
+6. В 23:55 МСК сервер сам отправляет чек смены в `CAFE_CHAT_ID`
