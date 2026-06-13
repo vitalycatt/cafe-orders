@@ -1,10 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 
 const SEPARATOR = '--------------------------------';
 
-export default function ReceiptPreview({ report, onClose }) {
+export default function ReceiptPreview({ report, socket, onClose }) {
   const receiptRef = useRef(null);
+  const [sending, setSending] = useState(false);
 
   const renderBlob = async () =>
     new Promise(async (resolve) => {
@@ -22,22 +23,37 @@ export default function ReceiptPreview({ report, onClose }) {
   };
 
   const handleShare = async () => {
-    if (!receiptRef.current) return;
+    if (!receiptRef.current || sending) return;
     const blob = await renderBlob();
     if (!blob) return;
 
-    const file = new File([blob], `receipt-${report.date}.png`, { type: 'image/png' });
-    const shareData = { files: [file], title: `Чек смены ${report.date}` };
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
 
-    if (navigator.canShare?.(shareData)) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err) {
-        if (err?.name === 'AbortError') return;
-      }
+    // Outside Telegram (or no user info) — just download the PNG.
+    if (!tgUser?.id || !socket) {
+      downloadBlob(blob);
+      return;
     }
-    downloadBlob(blob);
+
+    setSending(true);
+    const arrayBuffer = await blob.arrayBuffer();
+    socket.emit(
+      'receipt:send',
+      {
+        chatId: tgUser.id,
+        image: arrayBuffer,
+        filename: `receipt-${report.date}.png`,
+      },
+      (res) => {
+        setSending(false);
+        if (res?.ok) {
+          alert('Чек отправлен в личку бота');
+          onClose?.();
+        } else {
+          alert(`Не удалось отправить: ${res?.error || 'неизвестная ошибка'}`);
+        }
+      },
+    );
   };
 
   return (
@@ -91,7 +107,9 @@ export default function ReceiptPreview({ report, onClose }) {
         </div>
 
         <div className="receipt-actions receipt-actions--row">
-          <button className="btn btn-primary" onClick={handleShare}>Поделиться</button>
+          <button className="btn btn-primary" onClick={handleShare} disabled={sending}>
+            {sending ? 'Отправка...' : 'Поделиться'}
+          </button>
           <button className="btn btn-secondary" onClick={onClose}>Закрыть</button>
         </div>
 

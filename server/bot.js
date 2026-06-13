@@ -1,5 +1,6 @@
 const noopBot = {
   sendPhoto: async () => { throw new Error('Bot is disabled'); },
+  sendDocument: async () => { throw new Error('Bot is disabled'); },
   sendMessage: async () => { throw new Error('Bot is disabled'); },
   enabled: false,
 };
@@ -52,6 +53,11 @@ module.exports = {
   enabled: true,
   sendPhoto: async (chatId, buffer, caption) => {
     await bot.api.sendPhoto(Number(chatId), new InputFile(buffer, 'receipt.jpg'), {
+      caption: caption || undefined,
+    });
+  },
+  sendDocument: async (chatId, buffer, filename, caption) => {
+    await bot.api.sendDocument(Number(chatId), new InputFile(buffer, filename || 'receipt.png'), {
       caption: caption || undefined,
     });
   },

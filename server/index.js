@@ -129,12 +129,18 @@ io.on('connection', (socket) => {
 
   socket.on('receipt:send', async (data, callback) => {
     try {
-      const { chatId, image } = data;
+      const { chatId, image, filename } = data;
       const buffer = Buffer.isBuffer(image) ? image : Buffer.from(image);
       const date = new Date().toLocaleDateString('ru-RU');
-      await botModule.sendPhoto(chatId, buffer, `Чек смены ${date}`);
+      await botModule.sendDocument(
+        chatId,
+        buffer,
+        filename || `receipt-${date}.png`,
+        `Чек смены ${date}`,
+      );
       if (typeof callback === 'function') callback({ ok: true });
     } catch (err) {
+      console.error('receipt:send failed:', err);
       if (typeof callback === 'function') callback({ ok: false, error: err.message });
     }
   });
