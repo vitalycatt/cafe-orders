@@ -3,7 +3,6 @@ const db = require('./db');
 const MSK_OFFSET_HOURS = 3;
 
 const SLOTS = [
-  { name: 'midday', hourMsk: 12, minMsk: 40 },
   { name: 'evening', hourMsk: 23, minMsk: 55 },
 ];
 
