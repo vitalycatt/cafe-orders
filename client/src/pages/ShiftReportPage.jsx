@@ -24,11 +24,11 @@ export default function ShiftReportPage() {
   return (
     <div className="page report-page">
       <header className="page-header">
-        <h1>Отчёт за смену</h1>
+        <h1>Отчёт</h1>
         <div className="header-actions">
           {report && (
             <button className="btn-sm" onClick={() => setShowReceipt(true)}>
-              Предпросмотр чека
+              Чек
             </button>
           )}
           <button className="btn-sm" onClick={() => navigate(-1)}>Назад</button>
