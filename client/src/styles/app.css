@@ -419,9 +419,13 @@ input::placeholder { color: var(--muted); }
   border: 1.5px solid var(--border);
 }
 
-.menu-item.editing { flex-wrap: wrap; }
-.menu-item.editing input { padding: 8px 10px; font-size: 14px; }
-.menu-item.editing input[type='number'] { max-width: 80px; }
+.menu-item--clickable {
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.menu-item--clickable:hover { border-color: var(--primary); }
+.menu-item--clickable:active { background: var(--border); }
 
 .menu-item-name    { flex: 1; font-weight: 600; font-size: 15px; }
 .menu-item-price   { font-weight: 800; color: var(--primary); margin-right: 4px; }
@@ -493,17 +497,110 @@ input::placeholder { color: var(--muted); }
   text-align: center;
 }
 
-/* Editing row */
-.menu-item.editing {
-  flex-direction: column;
-  gap: 8px;
+/* ===== EDIT SHEET (bottom sheet for menu item edit) ===== */
+.edit-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
-.menu-item.editing input,
-.menu-item.editing select {
+.edit-sheet {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
   width: 100%;
-  padding: 8px 10px;
-  font-size: 14px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  box-shadow: var(--shadow-md);
+  animation: slideUp 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.edit-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 8px auto 4px;
+}
+
+.edit-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px 4px;
+}
+
+.edit-sheet-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.edit-sheet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 20px 4px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-field > span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.edit-field input,
+.edit-field select {
+  padding: 12px 14px;
+  font-size: 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  width: 100%;
+}
+
+.edit-field input:focus,
+.edit-field select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.edit-sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.edit-sheet-actions .btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
 }
 
 /* ===== MODAL ===== */
